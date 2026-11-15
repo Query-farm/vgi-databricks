@@ -1,0 +1,74 @@
+# name: test/sql/auth.test
+# description: Every databricks secret auth mode against the strict replay: PAT, OAuth M2M, Azure AD token, and failures
+# group: [databricks]
+
+require vgi
+
+require-env DATABRICKS_WORKER
+
+require-env DATABRICKS_MOCK
+
+statement ok
+ATTACH 'databricks' (TYPE vgi, LOCATION '{DATABRICKS_WORKER}');
+
+# OAuth machine-to-machine: the service principal's client id + secret are exchanged at
+# <host>/oidc/v1/token (client-credentials grant, scope all-apis) for a bearer token.
+statement ok
+CREATE SECRET dbx_sp (TYPE databricks, HOST '{DATABRICKS_MOCK}', CLIENT_ID 'fixture-sp-client-id', CLIENT_SECRET 'fixture-sp-secret');
+
+query I
+SELECT count(*) FROM databricks.main.jobs;
+----
+4
+
+statement ok
+DROP SECRET dbx_sp;
+
+# A wrong client secret fails at the token endpoint, with its HTTP status.
+statement ok
+CREATE SECRET dbx_sp_bad (TYPE databricks, HOST '{DATABRICKS_MOCK}', CLIENT_ID 'fixture-sp-client-id', CLIENT_SECRET 'wrong');
+
+statement error
+SELECT count(*) FROM databricks.main.jobs;
+----
+<REGEX>:.*oidc/v1/token failed with HTTP 401.*
+
+statement ok
+DROP SECRET dbx_sp_bad;
+
+# An Azure AD (Entra ID) access token, AUTH_TYPE spelled out.
+statement ok
+CREATE SECRET dbx_aad (TYPE databricks, HOST '{DATABRICKS_MOCK}', AZURE_TOKEN 'aad-fixture-token', AUTH_TYPE 'azure');
+
+query T
+SELECT name FROM databricks.main.sql_warehouses ORDER BY name;
+----
+BI Pro
+Serverless Starter Warehouse
+
+statement ok
+DROP SECRET dbx_aad;
+
+# AUTH_TYPE must match the fields given.
+statement ok
+CREATE SECRET dbx_mismatch (TYPE databricks, HOST '{DATABRICKS_MOCK}', TOKEN 'dapi-fixture-token', AUTH_TYPE 'oauth-m2m');
+
+statement error
+SELECT count(*) FROM databricks.main.jobs;
+----
+<REGEX>:.*AUTH_TYPE 'oauth-m2m' needs CLIENT_ID and CLIENT_SECRET.*
+
+statement ok
+DROP SECRET dbx_mismatch;
+
+# A rejected token: the HTTP status and a hint, never the token itself.
+statement ok
+CREATE SECRET dbx_wrong (TYPE databricks, HOST '{DATABRICKS_MOCK}', TOKEN 'dapi-not-valid-secret-value');
+
+statement error
+SELECT count(*) FROM databricks.main.clusters;
+----
+<REGEX>:.*HTTP 401 \(check the databricks secret.*
+
+statement ok
+DROP SECRET dbx_wrong;

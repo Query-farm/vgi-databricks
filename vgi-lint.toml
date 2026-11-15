@@ -4,13 +4,10 @@
 # contract with `vgi-lint spec`.
 
 # The worker to attach, relative to this directory. Build it first with `make build`.
-location = ".venv/bin/vgi-starter-worker"
+location = ".venv/bin/vgi-databricks-worker"
 
-# template-only:start
-fail_on = "info"
-# template-only:end
 # Fail on warnings while you build. Raise this to "info" before you publish the worker.
-# fork-only: fail_on = "warning"
+fail_on = "info"
 
 # Waive a finding only with a kind and a reason, so the waiver can be audited:
 #   domain-exemption  permanent and legitimate for this worker
@@ -18,10 +15,93 @@ fail_on = "info"
 #   timing            slow or flaky because of the environment, not the metadata
 #   tooling-bug       the linter is wrong; report it upstream
 ignore = [
-  # { code = "VGI146", kind = "domain-exemption", reason = "every entry point needs a key" },
+  # The first scalar call of a session spawns a fresh Python worker; on a heavily loaded shared
+  # host interpreter start-up alone can exceed the timing budget.
+  { code = "VGI908", kind = "timing", reason = "worker cold start on a loaded host; unified_status itself runs in milliseconds" },
 ]
+
+[options]
+# The unified schema's run_id / task_run_id are VARCHAR by the cross-orchestrator contract (Airflow and
+# Dagster ids are text); the native Jobs ids in main are BIGINT, as the API returns them.
+type_consistency_ignore_names = ["run_id", "task_run_id"]
+
+# VGI808/809 guess foreign keys from column names. Declared: job_run_tasks→job_runs,
+# pipeline_updates/pipeline_events→pipelines, unified.task_runs→unified.runs. The rest are either a
+# table's own primary key (the rule compares a singular column base with a plural table name) or
+# references the API does not keep whole, so an ENFORCED key could not be attested:
+# * clusters lists only pinned/recent clusters (job clusters for 30 days), so a cluster_id in runs,
+#   events or pipelines can name a cluster that is no longer listed;
+# * queries outlive deleted warehouses; runs of deleted jobs, clusters of deleted pools and policies
+#   keep their ids; event logs outlive the updates listing.
+[per_object."databricks.main.jobs"]
+ignore = [{ code = "VGI808", kind = "tooling-bug", reason = "job_id is this table's own primary key" }]
+[per_object."databricks.main.clusters"]
+ignore = [
+  { code = "VGI808", kind = "tooling-bug", reason = "cluster_id is this table's own primary key" },
+  { code = "VGI808", kind = "domain-exemption", reason = "instance_pool_id can name a deleted pool; no enforceable FK" },
+  { code = "VGI809", kind = "domain-exemption", reason = "policy_id can name a deleted policy; node_type_id and termination_code are enums, not keys" },
+]
+[per_object."databricks.main.instance_pools"]
+ignore = [
+  { code = "VGI808", kind = "tooling-bug", reason = "instance_pool_id is this table's own primary key" },
+  { code = "VGI809", kind = "domain-exemption", reason = "node_type_id is a cloud instance type, not a key of another table" },
+]
+[per_object."databricks.main.pipelines"]
+ignore = [
+  { code = "VGI808", kind = "tooling-bug", reason = "pipeline_id is this table's own primary key" },
+  { code = "VGI808", kind = "domain-exemption", reason = "cluster_id can name a cluster the clusters list no longer returns" },
+]
+[per_object."databricks.main.repos"]
+ignore = [{ code = "VGI808", kind = "tooling-bug", reason = "repo_id is this table's own primary key" }]
+[per_object."databricks.main.job_runs"]
+ignore = [
+  { code = "VGI808", kind = "tooling-bug", reason = "run_id is this table's own key; unified.runs is another schema with a VARCHAR run_id" },
+  { code = "VGI808", kind = "domain-exemption", reason = "job_id is NULL for submit runs and can outlive a deleted job; cluster_id can name an unlisted cluster" },
+  { code = "VGI809", kind = "domain-exemption", reason = "termination_code is an enum shared with clusters/tasks, not a key" },
+]
+[per_object."databricks.main.job_run_tasks"]
+ignore = [
+  { code = "VGI808", kind = "tooling-bug", reason = "task_run_id is this table's own key; unified.task_runs is another schema with a VARCHAR id" },
+  { code = "VGI808", kind = "domain-exemption", reason = "job_id can outlive a deleted job; cluster_id can name an unlisted cluster; run_id → job_runs is declared" },
+  { code = "VGI809", kind = "domain-exemption", reason = "termination_code is an enum, not a key" },
+]
+[per_object."databricks.main.cluster_events"]
+ignore = [
+  { code = "VGI807", kind = "domain-exemption", reason = "the events API has no event id and (cluster_id, timestamp, type) is not guaranteed unique" },
+  { code = "VGI808", kind = "domain-exemption", reason = "events outlive the clusters list (terminated job clusters drop out after 30 days)" },
+]
+[per_object."databricks.main.cluster_policies"]
+ignore = [{ code = "VGI809", kind = "domain-exemption", reason = "clusters can keep the policy_id of a deleted policy; no enforceable FK" }]
+[per_object."databricks.main.pipeline_updates"]
+ignore = [
+  { code = "VGI808", kind = "domain-exemption", reason = "cluster_id can name a cluster the clusters list no longer returns" },
+  { code = "VGI809", kind = "domain-exemption", reason = "event logs keep update ids beyond the updates listing; no enforceable FK" },
+]
+[per_object."databricks.main.pipeline_events"]
+ignore = [{ code = "VGI809", kind = "domain-exemption", reason = "event logs keep update ids beyond the updates listing; no enforceable FK" }]
+[per_object."databricks.main.query_history"]
+ignore = [
+  { code = "VGI144", kind = "domain-exemption", reason = "named after the Databricks Query History API and UI that users search for" },
+  { code = "VGI809", kind = "domain-exemption", reason = "query history outlives deleted warehouses; no enforceable FK" },
+]
+[per_object."databricks.main.sql_warehouses"]
+ignore = [{ code = "VGI809", kind = "domain-exemption", reason = "query history outlives deleted warehouses; no enforceable FK" }]
+[per_object."databricks.unified.runs"]
+ignore = [{ code = "VGI808", kind = "tooling-bug", reason = "run_id is this table's own primary key" }]
+[per_object."databricks.unified.task_runs"]
+ignore = [{ code = "VGI808", kind = "tooling-bug", reason = "task_run_id is this table's own primary key; its run_id FK to runs is declared" }]
 
 # Adopting the gate on a worker that already has findings? Record them once with
 #   vgi-lint lint --baseline vgi-lint-baseline --update-baseline
 # and uncomment the next line. Only new findings fail after that.
 # baseline = "vgi-lint-baseline"
+
+# Numeric identifiers that are references, not quantities: VGI131 asks for a unit they do not have.
+[per_object."databricks.main.job_runs.job_id"]
+ignore = [{ code = "VGI131", kind = "domain-exemption", reason = "BIGINT identifier, not a quantity: it has no unit" }]
+[per_object."databricks.main.job_runs.original_attempt_run_id"]
+ignore = [{ code = "VGI131", kind = "domain-exemption", reason = "BIGINT identifier, not a quantity: it has no unit" }]
+[per_object."databricks.main.job_run_tasks.job_id"]
+ignore = [{ code = "VGI131", kind = "domain-exemption", reason = "BIGINT identifier, not a quantity: it has no unit" }]
+[per_object."databricks.main.query_history.user_id"]
+ignore = [{ code = "VGI131", kind = "domain-exemption", reason = "BIGINT identifier, not a quantity: it has no unit" }]

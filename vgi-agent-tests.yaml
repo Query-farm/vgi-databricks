@@ -1,16 +1,75 @@
 # Private graders for the public vgi.agent_test_tasks in the worker's catalog metadata.
-# `vgi-lint lint --ai` runs an agent on each prompt and grades it with check_sql.
+# `vgi-lint lint --ai` runs an agent on each prompt and grades it against reference_sql.
 # See https://github.com/Query-farm/vgi-lint-check (VGI920).
+#
+# Credential-gated: every task but normalize_state needs a `databricks` secret. The data is
+# the fixture workspace (test/fixtures/workspace.json replayed by test/mock_api/server.py),
+# which never changes, so reference results are deterministic. Run --ai with
+#   CREATE SECRET (TYPE databricks, HOST '<replay url>', TOKEN 'dapi-fixture-token');
 tasks:
-  - name: formal_greeting
-    reference_sql: SELECT starter.main.greet('Grace', 'formal') AS greeting
-  - name: sum_of_squares
-    reference_sql: SELECT sum(squared) AS total FROM starter.main.sequence_table(10)
-  - name: stepped_sequence
-    reference_sql: SELECT n FROM starter.main.sequence_table(4, step := 5) ORDER BY n
-  # Reads the public demo API (https://vgi-starter-api.query-farm.services/v1).
-  - name: items_per_category
-    check_sql: >-
-      SELECT count(*) = 3 AND sum(items) = 25
-      FROM (SELECT category, count(*) AS items
-            FROM starter.main.fetch_items('https://vgi-starter-api.query-farm.services/v1') GROUP BY category)
+  - name: failed_runs
+    reference_sql: SELECT run_id, run_name FROM databricks.main.job_runs WHERE result_state = 'FAILED' ORDER BY ALL
+    unordered: true
+  - name: retried_task
+    reference_sql: >-
+      SELECT run_id, task_key, count(*) AS attempts FROM databricks.main.job_run_tasks
+      GROUP BY ALL HAVING count(*) > 1
+  - name: runs_per_status
+    reference_sql: SELECT status, count(*) AS runs FROM databricks.unified.runs GROUP BY status ORDER BY status
+    unordered: true
+  - name: scheduled_jobs
+    reference_sql: >-
+      SELECT name, schedule_cron FROM databricks.main.jobs WHERE schedule_cron IS NOT NULL ORDER BY name
+    unordered: true
+  - name: upstream_failed
+    reference_sql: >-
+      SELECT run_id, task_key FROM databricks.main.job_run_tasks WHERE result_state = 'UPSTREAM_FAILED' ORDER BY ALL
+    unordered: true
+  - name: failure_error
+    reference_sql: SELECT error FROM databricks.main.run_output(2002) WHERE task_key = 'transform'
+  - name: running_clusters
+    reference_sql: >-
+      SELECT cluster_name, creator_user_name FROM databricks.main.clusters WHERE state = 'RUNNING' ORDER BY ALL
+    unordered: true
+  - name: inactivity_terminations
+    reference_sql: SELECT cluster_name FROM databricks.main.clusters WHERE termination_code = 'INACTIVITY'
+  - name: failed_queries
+    reference_sql: >-
+      SELECT w.name, count(*) AS failed FROM databricks.main.query_history q
+      JOIN databricks.main.sql_warehouses w USING (warehouse_id) WHERE q.status = 'FAILED' GROUP BY w.name
+    unordered: true
+  - name: pipeline_errors
+    reference_sql: >-
+      SELECT p.name, e.message FROM databricks.main.pipeline_events e JOIN databricks.main.pipelines p
+      USING (pipeline_id) WHERE e.level = 'ERROR' ORDER BY ALL
+    unordered: true
+  - name: keyvault_scopes
+    reference_sql: SELECT scope FROM databricks.main.secret_scopes WHERE backend_type = 'AZURE_KEYVAULT'
+  - name: autoscale_events
+    reference_sql: >-
+      SELECT e.target_num_workers FROM databricks.main.cluster_events e JOIN databricks.main.clusters c
+      USING (cluster_id) WHERE c.cluster_name = 'shared-analytics' AND e.type = 'RESIZING' ORDER BY e.timestamp
+  - name: policy_usage
+    reference_sql: >-
+      SELECT p.name, count(c.cluster_id) AS clusters FROM databricks.main.cluster_policies p
+      LEFT JOIN databricks.main.clusters c USING (policy_id) GROUP BY p.name
+    unordered: true
+  - name: pool_capacity
+    reference_sql: SELECT instance_pool_name, max_capacity FROM databricks.main.instance_pools
+    unordered: true
+  - name: failed_pipeline_updates
+    reference_sql: >-
+      SELECT p.name, u.update_id FROM databricks.main.pipeline_updates u JOIN databricks.main.pipelines p
+      USING (pipeline_id) WHERE u.state = 'FAILED'
+  - name: repo_branches
+    reference_sql: SELECT path, branch FROM databricks.main.repos WHERE branch <> 'main'
+  - name: notebook_languages
+    reference_sql: >-
+      SELECT language, count(*) AS notebooks
+      FROM databricks.main.workspace_objects('/Users/alice@example.com', recursive := true)
+      WHERE object_type = 'NOTEBOOK' GROUP BY language
+    unordered: true
+  - name: retried_unified_tasks
+    reference_sql: SELECT run_id, task_name, attempt FROM databricks.unified.task_runs WHERE attempt > 1
+  - name: normalize_state
+    reference_sql: SELECT databricks.unified.unified_status('UPSTREAM_CANCELED') AS status

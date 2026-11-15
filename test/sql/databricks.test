@@ -1,0 +1,537 @@
+# name: test/sql/databricks.test
+# description: The databricks worker through DuckDB, against the strict replay in test/mock_api (ci/run-integration.sh)
+# group: [databricks]
+
+require vgi
+
+require-env DATABRICKS_WORKER
+
+require-env DATABRICKS_MOCK
+
+# JSON columns (settings, details, definition) use the json extension's operators.
+statement ok
+LOAD json;
+
+statement ok
+ATTACH 'databricks' (TYPE vgi, LOCATION '{DATABRICKS_WORKER}');
+
+# ---------------------------------------------------------------- catalog shape
+
+query TT
+SELECT schema_name, table_name FROM duckdb_tables() WHERE database_name = 'databricks' ORDER BY schema_name, table_name;
+----
+main	cluster_events
+main	cluster_policies
+main	clusters
+main	instance_pools
+main	job_run_tasks
+main	job_runs
+main	jobs
+main	pipeline_events
+main	pipeline_updates
+main	pipelines
+main	query_history
+main	repos
+main	secret_scopes
+main	sql_warehouses
+unified	runs
+unified	task_runs
+
+# No secret yet: a clear error, not a crash.
+statement error
+SELECT count(*) FROM databricks.main.jobs;
+----
+<REGEX>:.*no Databricks credentials.*
+
+# A secret of the wrong shape is rejected with the field name.
+statement ok
+CREATE SECRET dbx_bad (TYPE databricks, HOST 'ftp://example.com', TOKEN 'x');
+
+statement error
+SELECT count(*) FROM databricks.main.jobs;
+----
+<REGEX>:.*HOST must be an http.*
+
+statement ok
+DROP SECRET dbx_bad;
+
+statement ok
+CREATE SECRET dbx_noauth (TYPE databricks, HOST '{DATABRICKS_MOCK}');
+
+statement error
+SELECT count(*) FROM databricks.main.jobs;
+----
+<REGEX>:.*set TOKEN, or CLIENT_ID and CLIENT_SECRET, or AZURE_TOKEN.*
+
+statement ok
+DROP SECRET dbx_noauth;
+
+# A personal access token; two items per page so every listing pages through tokens.
+# This replay also answers the first request to every path with 429 + Retry-After.
+statement ok
+CREATE SECRET dbx (TYPE databricks, HOST '{DATABRICKS_MOCK}', TOKEN 'dapi-fixture-token', PAGE_SIZE 2);
+
+# ------------------------------------------------------------------------- jobs
+
+query ITTTTI
+SELECT job_id, name, schedule_cron, trigger_type, schedule_paused, task_count FROM databricks.main.jobs ORDER BY job_id;
+----
+101	nightly_etl	0 0 2 * * ?	periodic	false	3
+102	flaky_report	NULL	NULL	NULL	3
+103	dlt_refresh	0 30 0 * * ?	periodic	true	1
+104	table_watch	NULL	table_update	false	1
+
+# Tasks beyond the first page (the replay pages task arrays two at a time) are fetched via jobs/get.
+query T
+SELECT array_to_string([t.task_key || ':' || t.task_type || '@' || coalesce(t.cluster, '-') FOR t IN tasks], ' ') FROM databricks.main.jobs WHERE job_id = 101;
+----
+ingest:notebook@job_cluster:etl_cluster transform:spark_python@job_cluster:etl_cluster publish:sql@serverless
+
+query TT
+SELECT tags['team'], tasks[2].depends_on FROM databricks.main.jobs WHERE name = 'nightly_etl';
+----
+data-eng	[ingest]
+
+query TIII
+SELECT job_clusters[1].job_cluster_key, job_clusters[1].num_workers, job_clusters[1].autoscale_min_workers, job_clusters[1].autoscale_max_workers FROM databricks.main.jobs WHERE job_id = 101;
+----
+etl_cluster	NULL	2	8
+
+# Secrets in job settings are masked; {{secrets/...}} references are kept.
+query TTTT
+SELECT settings->>'$.parameters[1].default', settings->>'$.parameters[0].default', settings->'$.job_clusters[0].new_cluster.spark_conf'->>'$."spark.hadoop.fs.s3a.secret.key"', settings->'$.job_clusters[0].new_cluster.spark_conf'->>'$."fs.azure.account.key.lake.dfs.core.windows.net"' FROM databricks.main.jobs WHERE job_id = 101;
+----
+***	prod	***	{{secrets/lake/account-key}}
+
+query I
+SELECT count(*) FROM databricks.main.jobs WHERE settings::VARCHAR LIKE '%hunter2%' OR settings::VARCHAR LIKE '%plaintext-fixture-secret%';
+----
+0
+
+# -------------------------------------------------------------------- job runs
+
+query IITTTTT
+SELECT run_id, job_id, run_name, run_type, trigger, life_cycle_state, result_state FROM databricks.main.job_runs ORDER BY run_id;
+----
+2001	101	nightly_etl	JOB_RUN	PERIODIC	TERMINATED	SUCCESS
+2002	101	nightly_etl	JOB_RUN	PERIODIC	TERMINATED	FAILED
+2003	101	nightly_etl	JOB_RUN	PERIODIC	RUNNING	NULL
+2101	102	flaky_report	JOB_RUN	ONE_TIME	TERMINATED	SUCCESS
+2102	102	flaky_report	JOB_RUN	ONE_TIME	TERMINATED	CANCELED
+2201	103	dlt_refresh	JOB_RUN	PERIODIC	TERMINATED	FAILED
+2301	104	table_watch	JOB_RUN	TABLE	QUEUED	NULL
+2401	NULL	adhoc_backfill	SUBMIT_RUN	ONE_TIME	TERMINATED	SUCCESS
+
+query ITTTRT
+SELECT run_id, start_time, end_time, termination_code, run_duration_seconds, state_message FROM databricks.main.job_runs WHERE job_id = 101 AND result_state = 'FAILED';
+----
+2002	2026-11-14 02:00:00+00	2026-11-14 02:25:00+00	RUN_EXECUTION_ERROR	1500.0	Task transform failed with message: Workload failed, see run output for details.
+
+query IT
+SELECT run_id, queue_reason FROM databricks.main.job_runs WHERE life_cycle_state IN ('QUEUED', 'RUNNING') ORDER BY run_id;
+----
+2003	NULL
+2301	Queued due to reaching maximum concurrent runs on the warehouse.
+
+query ITT
+SELECT run_id, user_cancelled_or_timedout, creator_user_name FROM databricks.main.job_runs WHERE run_id = 2102;
+----
+2102	true	bob@example.com
+
+# Job parameters are masked like settings.
+query T
+SELECT array_to_string([p.name || '=' || p.value FOR p IN job_parameters], ' ') FROM databricks.main.job_runs WHERE run_id = 2001;
+----
+env=prod db_password=***
+
+query I
+SELECT count(*) FROM databricks.main.job_runs WHERE start_time >= TIMESTAMPTZ '2026-11-14 00:00:00+00' AND start_time < TIMESTAMPTZ '2026-11-15 00:00:00+00';
+----
+4
+
+# --------------------------------------------------------------- job run tasks
+
+# Run 2002 has three tasks; the replay pages them two at a time (has_more → runs/get page tokens).
+query ITIITT
+SELECT run_id, task_key, task_run_id, attempt_number, result_state, cluster_id FROM databricks.main.job_run_tasks WHERE run_id = 2002 ORDER BY task_run_id;
+----
+2002	ingest	3011	0	SUCCESS	1114-020100-jc2002cd
+2002	transform	3012	0	FAILED	1114-020100-jc2002cd
+2002	publish	3013	0	UPSTREAM_FAILED	NULL
+
+# Retries are separate rows.
+query ITI
+SELECT run_id, task_key, count(*) AS attempts FROM databricks.main.job_run_tasks GROUP BY ALL HAVING count(*) > 1 ORDER BY ALL;
+----
+2101	render	2
+
+query I
+SELECT count(*) FROM databricks.main.job_run_tasks;
+----
+19
+
+query TTR
+SELECT task_key, task_type, execution_duration_seconds FROM databricks.main.job_run_tasks WHERE task_run_id = 3002;
+----
+transform	spark_python	1135.0
+
+# ------------------------------------------------------------------ run_output
+
+query TITT
+SELECT task_key, task_run_id, result_state, error FROM databricks.main.run_output(2002) ORDER BY task_run_id;
+----
+ingest	3011	SUCCESS	NULL
+transform	3012	FAILED	AnalysisException: [TABLE_OR_VIEW_NOT_FOUND] The table or view `main`.`raw`.`orders_v2` cannot be found.
+publish	3013	UPSTREAM_FAILED	NULL
+
+# A task run id returns just that task.
+query TIT
+SELECT task_key, attempt_number, error_trace LIKE 'Traceback%' FROM databricks.main.run_output(3012);
+----
+transform	0	true
+
+# The notebook exit value is withheld unless include_result := true; its length is always shown.
+query TITT
+SELECT task_key, attempt_number, notebook_result, notebook_result_truncated FROM databricks.main.run_output(2101) ORDER BY task_run_id;
+----
+extract	0	NULL	false
+render	0	NULL	NULL
+render	1	NULL	false
+email	0	NULL	false
+
+query TT
+SELECT task_key, notebook_result FROM databricks.main.run_output(2101, include_result := true) WHERE attempt_number = 1;
+----
+render	{"rows": 42}
+
+query IT
+SELECT notebook_result_length, notebook_result IS NULL FROM databricks.main.run_output(3103);
+----
+12	true
+
+# Logs are cut to max_log_chars and flagged.
+query TTI
+SELECT left(logs, 11), logs_truncated, length(logs) FROM databricks.main.run_output(2401, max_log_chars := 20);
+----
+Backfilling	true	20
+
+query T
+SELECT logs_truncated FROM databricks.main.run_output(2401);
+----
+false
+
+statement error
+SELECT * FROM databricks.main.run_output(999999);
+----
+<REGEX>:.*run 999999 does not exist.*
+
+# -------------------------------------------------------------------- clusters
+
+query TTTTIII
+SELECT cluster_name, state, cluster_source, termination_code, num_workers, autoscale_min_workers, autoscale_max_workers FROM databricks.main.clusters ORDER BY cluster_name;
+----
+alice-adhoc	TERMINATED	UI	INACTIVITY	0	NULL	NULL
+bob-ml-gpu	TERMINATED	API	USER_REQUEST	1	NULL	NULL
+job-101-run-2002	TERMINATED	JOB	JOB_FINISHED	2	2	8
+shared-analytics	RUNNING	UI	NULL	2	1	4
+
+# Spark config secrets are masked.
+query TT
+SELECT spark_conf['spark.hadoop.javax.jdo.option.ConnectionPassword'], spark_conf['spark.sql.shuffle.partitions'] FROM databricks.main.clusters WHERE cluster_id = '0915-120000-shared01';
+----
+***	64
+
+query TT
+SELECT cluster_name, default_tags['JobId'] FROM databricks.main.clusters WHERE cluster_source = 'JOB';
+----
+job-101-run-2002	101
+
+query TTIIT
+SELECT timestamp, type, current_num_workers, target_num_workers, cause FROM databricks.main.cluster_events WHERE cluster_id = '0915-120000-shared01' AND type IN ('RESIZING', 'UPSIZE_COMPLETED') ORDER BY timestamp;
+----
+2026-11-14 10:00:00+00	RESIZING	1	4	AUTOSCALE
+2026-11-14 10:04:00+00	UPSIZE_COMPLETED	4	4	NULL
+2026-11-14 13:00:00+00	RESIZING	4	2	AUTOSCALE
+
+# Without a cluster_id, events of every listed cluster are read.
+query TT
+SELECT cluster_id, reason_code FROM databricks.main.cluster_events WHERE type = 'TERMINATING' ORDER BY cluster_id;
+----
+1101-100000-bobml01	USER_REQUEST
+1110-090000-adhoc01	INACTIVITY
+1114-020100-jc2002cd	JOB_FINISHED
+
+query I
+SELECT count(*) FROM databricks.main.cluster_events;
+----
+13
+
+query TTIT
+SELECT name, is_default, max_clusters_per_user, definition->'$.autotermination_minutes'->>'$.maxValue' FROM databricks.main.cluster_policies ORDER BY name;
+----
+All-purpose (small)	false	2	120
+Job Compute	false	NULL	NULL
+Personal Compute	true	NULL	NULL
+
+query TI
+SELECT p.name, count(c.cluster_id) FROM databricks.main.cluster_policies p LEFT JOIN databricks.main.clusters c USING (policy_id) GROUP BY p.name ORDER BY p.name;
+----
+All-purpose (small)	1
+Job Compute	1
+Personal Compute	0
+
+query TTIIIT
+SELECT instance_pool_name, node_type_id, max_capacity, used_count, idle_count, array_to_string(preloaded_spark_versions, ',') FROM databricks.main.instance_pools ORDER BY instance_pool_name;
+----
+general-i3	i3.xlarge	20	0	1	15.4.x-scala2.12
+gpu-g5	g5.xlarge	4	0	0	(empty)
+
+# ------------------------------------------------------------------------- SQL
+
+query TTTTTT
+SELECT name, state, cluster_size, enable_serverless_compute, health_status, custom_tags['team'] FROM databricks.main.sql_warehouses ORDER BY name;
+----
+BI Pro	STOPPED	Medium	false	NULL	NULL
+Serverless Starter Warehouse	RUNNING	2X-Small	true	HEALTHY	analytics
+
+query TT
+SELECT warehouse_id, name FROM databricks.main.sql_warehouses WHERE warehouse_id = 'wh-pro-02';
+----
+wh-pro-02	BI Pro
+
+query TI
+SELECT w.name, count(*) AS failed FROM databricks.main.query_history q JOIN databricks.main.sql_warehouses w USING (warehouse_id) WHERE q.status = 'FAILED' GROUP BY w.name ORDER BY w.name;
+----
+BI Pro	1
+Serverless Starter Warehouse	1
+
+query TTTRIT
+SELECT query_id, user_name, status, duration_seconds, rows_produced, result_from_cache FROM databricks.main.query_history WHERE query_start_time >= TIMESTAMPTZ '2026-11-14 09:00:00+00' AND query_start_time < TIMESTAMPTZ '2026-11-14 12:00:00+00' ORDER BY query_start_time;
+----
+01ef-q1	alice@example.com	FINISHED	1.2	1	false
+01ef-q2	bob@example.com	FAILED	0.3	0	false
+01ef-q3	bob@example.com	FAILED	0.04	0	false
+01ef-q4	alice@example.com	FINISHED	35.5	5000	false
+
+query TIIT
+SELECT query_id, read_bytes, spill_to_disk_bytes, is_final FROM databricks.main.query_history WHERE user_id = 1001 AND status IN ('FINISHED', 'RUNNING') ORDER BY query_id;
+----
+01ef-q1	1048576	0	true
+01ef-q4	73400320	1048576	true
+01ef-q8	0	0	false
+
+query I
+SELECT count(*) FROM databricks.main.query_history;
+----
+8
+
+# ------------------------------------------------------------------- pipelines
+
+query TTTTT
+SELECT pipeline_id, name, state, health, latest_update_state FROM databricks.main.pipelines ORDER BY name;
+----
+pl-events-0002	events_dlt	IDLE	HEALTHY	COMPLETED
+pl-orders-0001	orders_dlt	FAILED	UNHEALTHY	FAILED
+
+query TT
+SELECT name, run_as_user_name FROM databricks.main.pipelines WHERE pipeline_id = 'pl-orders-0001';
+----
+orders_dlt	6f1e2d3c-0000-4000-8000-00000000e7b0
+
+query T
+SELECT pipeline_id FROM databricks.main.pipelines WHERE name = 'events_dlt';
+----
+pl-events-0002
+
+query TTTTT
+SELECT pipeline_id, update_id, state, cause, full_refresh FROM databricks.main.pipeline_updates ORDER BY pipeline_id, creation_time;
+----
+pl-events-0002	upd-e-1	COMPLETED	USER_ACTION	false
+pl-events-0002	upd-e-2	COMPLETED	API_CALL	false
+pl-orders-0001	upd-o-1	COMPLETED	USER_ACTION	true
+pl-orders-0001	upd-o-2	COMPLETED	JOB_TASK	false
+pl-orders-0001	upd-o-3	FAILED	JOB_TASK	false
+
+query T
+SELECT refresh_selection FROM databricks.main.pipeline_updates WHERE update_id = 'upd-e-2';
+----
+[sessions]
+
+query TTTT
+SELECT event_id, flow_name, error_fatal, error_exceptions[1].class_name FROM databricks.main.pipeline_events WHERE pipeline_id = 'pl-orders-0001' AND level = 'ERROR' ORDER BY timestamp;
+----
+ev-o-5	orders_clean	false	org.apache.spark.sql.AnalysisException
+ev-o-6	NULL	true	com.databricks.pipelines.common.errors.UpdateFailedException
+
+# Across every pipeline (6 + 2 events, paged two at a time with filter-free page tokens).
+query TI
+SELECT pipeline_id, count(*) FROM databricks.main.pipeline_events GROUP BY ALL ORDER BY ALL;
+----
+pl-events-0002	2
+pl-orders-0001	6
+
+query TT
+SELECT event_id, level FROM databricks.main.pipeline_events WHERE pipeline_id = 'pl-orders-0001' AND timestamp >= TIMESTAMPTZ '2026-11-14 00:30:40+00' AND level IN ('WARN', 'ERROR') ORDER BY event_id;
+----
+ev-o-4	WARN
+ev-o-5	ERROR
+ev-o-6	ERROR
+
+query T
+SELECT details->'$.flow_progress'->'$.data_quality'->>'$.dropped_records' FROM databricks.main.pipeline_events WHERE event_id = 'ev-o-4';
+----
+12
+
+# ------------------------------------------------------------------- workspace
+
+query ITTTT
+SELECT repo_id, path, provider, branch, array_to_string(sparse_checkout_patterns, ',') FROM databricks.main.repos ORDER BY repo_id;
+----
+501	/Repos/alice@example.com/etl	gitHub	main	(empty)
+502	/Repos/bob@example.com/reports	gitLab	feature/charts	reports/
+
+query I
+SELECT repo_id FROM databricks.main.repos WHERE path = '/Repos/bob@example.com/reports';
+----
+502
+
+query TTT
+SELECT scope, backend_type, keyvault_dns_name FROM databricks.main.secret_scopes ORDER BY scope;
+----
+kv-prod	AZURE_KEYVAULT	https://kv-prod.vault.azure.net/
+lake	DATABRICKS	NULL
+ml	DATABRICKS	NULL
+
+query TT
+SELECT path, object_type FROM databricks.main.workspace_objects('/') ORDER BY path;
+----
+/Repos	DIRECTORY
+/Shared	DIRECTORY
+/Users	DIRECTORY
+
+query TI
+SELECT language, count(*) FROM databricks.main.workspace_objects('/Users/alice@example.com', recursive := true) WHERE object_type = 'NOTEBOOK' GROUP BY language ORDER BY language;
+----
+PYTHON	2
+SCALA	1
+SQL	1
+
+query TTI
+SELECT path, parent_path, size FROM databricks.main.workspace_objects('/Users/alice@example.com') WHERE object_type = 'FILE';
+----
+/Users/alice@example.com/requirements.txt	/Users/alice@example.com	120
+
+# The whole tree; empty directories (/Repos) are skipped, not an error.
+query I
+SELECT count(*) FROM databricks.main.workspace_objects('/', recursive := true);
+----
+15
+
+statement error
+SELECT * FROM databricks.main.workspace_objects('/nope');
+----
+<REGEX>:.*path '/nope' does not exist.*
+
+# A relative path is rejected at bind time by the argument's pattern.
+statement error
+SELECT * FROM databricks.main.workspace_objects('Users');
+----
+<REGEX>:.*
+
+# --------------------------------------------------------------------- unified
+
+query TI
+SELECT status, count(*) FROM databricks.unified.runs GROUP BY status ORDER BY status;
+----
+cancelled	1
+failed	2
+queued	1
+running	1
+success	3
+
+query TTTTTTTR
+SELECT orchestrator, run_id, pipeline, status, raw_status, trigger, started_at, duration_seconds FROM databricks.unified.runs ORDER BY run_id;
+----
+databricks	2001	nightly_etl	success	SUCCESS	schedule	2026-11-13 02:00:00+00	2400.0
+databricks	2002	nightly_etl	failed	FAILED	schedule	2026-11-14 02:00:00+00	1500.0
+databricks	2003	nightly_etl	running	RUNNING	schedule	2026-11-15 02:00:00+00	NULL
+databricks	2101	flaky_report	success	SUCCESS	manual	2026-11-14 09:00:00+00	720.0
+databricks	2102	flaky_report	cancelled	CANCELED	manual	2026-11-14 15:00:00+00	180.0
+databricks	2201	dlt_refresh	failed	FAILED	schedule	2026-11-14 00:30:00+00	1080.0
+databricks	2301	table_watch	queued	QUEUED	event	2026-11-15 01:00:00+00	NULL
+databricks	2401	adhoc_backfill	success	SUCCESS	api	2026-11-13 12:00:00+00	300.0
+
+query TTTTTI
+SELECT run_id, task_run_id, task_name, status, raw_status, attempt FROM databricks.unified.task_runs WHERE run_id IN ('2101', '2102') ORDER BY task_run_id;
+----
+2101	3101	extract	success	SUCCESS	1
+2101	3102	render	failed	FAILED	1
+2101	3103	render	success	SUCCESS	2
+2101	3104	email	success	SUCCESS	1
+2102	3111	extract	cancelled	CANCELED	1
+2102	3112	render	skipped	UPSTREAM_CANCELED	1
+2102	3113	email	skipped	UPSTREAM_CANCELED	1
+
+query TI
+SELECT status, count(*) FROM databricks.unified.task_runs GROUP BY status ORDER BY status;
+----
+cancelled	1
+failed	3
+queued	2
+running	1
+skipped	3
+success	9
+
+query TI
+SELECT r.pipeline, count(*) FROM databricks.unified.task_runs t JOIN databricks.unified.runs r USING (run_id) WHERE t.status = 'failed' GROUP BY ALL ORDER BY ALL;
+----
+dlt_refresh	1
+flaky_report	1
+nightly_etl	1
+
+query I
+SELECT count(*) FROM databricks.unified.runs WHERE status = 'running' AND started_at >= TIMESTAMPTZ '2026-11-15 00:00:00+00';
+----
+1
+
+# The unified columns, types and nullability shared with the other orchestrator workers.
+query TT
+SELECT column_name, data_type FROM duckdb_columns() WHERE database_name = 'databricks' AND schema_name = 'unified' AND table_name = 'runs' ORDER BY column_index;
+----
+orchestrator	VARCHAR
+run_id	VARCHAR
+pipeline	VARCHAR
+status	VARCHAR
+raw_status	VARCHAR
+trigger	VARCHAR
+queued_at	TIMESTAMP WITH TIME ZONE
+started_at	TIMESTAMP WITH TIME ZONE
+ended_at	TIMESTAMP WITH TIME ZONE
+duration_seconds	DOUBLE
+url	VARCHAR
+
+query TTT
+SELECT column_name, data_type, is_nullable FROM duckdb_columns() WHERE database_name = 'databricks' AND schema_name = 'unified' AND table_name = 'task_runs' ORDER BY column_index;
+----
+orchestrator	VARCHAR	false
+run_id	VARCHAR	false
+task_run_id	VARCHAR	false
+task_name	VARCHAR	true
+status	VARCHAR	false
+raw_status	VARCHAR	true
+attempt	INTEGER	true
+started_at	TIMESTAMP WITH TIME ZONE	true
+ended_at	TIMESTAMP WITH TIME ZONE	true
+duration_seconds	DOUBLE	true
+url	VARCHAR	true
+
+query TT
+SELECT s, databricks.unified.unified_status(s) FROM (VALUES ('SUCCESS'), ('success_with_failures'), ('TIMEDOUT'), ('UPSTREAM_CANCELED'), ('BLOCKED'), ('INTERNAL_ERROR'), (NULL)) t(s) ORDER BY s NULLS LAST;
+----
+BLOCKED	queued
+INTERNAL_ERROR	failed
+SUCCESS	success
+TIMEDOUT	failed
+UPSTREAM_CANCELED	skipped
+success_with_failures	success
+NULL	queued

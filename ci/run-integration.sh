@@ -16,7 +16,7 @@
 #   PYTHON            command for the mock API, may contain spaces (default: python3)
 #   MIN_EXECUTED      fail if fewer test cases ran (default: 1)
 #   EXPECTED_SKIP_REASONS  newline-separated skip reasons that are allowed,
-#                     e.g. "require-env STARTER_LIVE". Any other skip fails.
+#                     e.g. "require-env DATABRICKS_LIVE". Any other skip fails.
 #   RECIPES_WORKER    command that runs a recipe by name (`$RECIPES_WORKER <recipe>`);
 #                     when set, examples/test/*.test run too (stdio/launch only)
 #   KEEP_STAGE=1      keep the staged test tree for debugging
@@ -71,22 +71,23 @@ start_server() {
   echo "::error::'$*' never printed PORT:<n>"; cat "$log"; return 1
 }
 
-# The mock APIs fetch_items is tested against. The plain one rate-limits every
-# page once (429 + Retry-After) so the retry path is always exercised.
-unset STARTER_API_TOKEN
-MOCK_API_FLAKY=1 start_server "$STAGE/mock.log" $PYTHON "$REPO/test/mock_api/server.py"
-export STARTER_MOCK_API="http://127.0.0.1:$PORT"
-MOCK_API_TOKEN=test-token start_server "$STAGE/mock-auth.log" $PYTHON "$REPO/test/mock_api/server.py"
-export STARTER_MOCK_API_AUTH="http://127.0.0.1:$PORT"
+# Strict replays of the Databricks REST API (test/mock_api/server.py) over the fixture
+# workspace in test/fixtures/workspace.json. The first rate-limits the first request to
+# every path once (429 + Retry-After) and pages task arrays two at a time, so the retry
+# and task-paging paths always run; the second is plain, for request-log (pushdown) checks.
+MOCK_FLAKY=1 MOCK_TASK_PAGE=2 start_server "$STAGE/mock.log" $PYTHON "$REPO/test/mock_api/server.py"
+export DATABRICKS_MOCK="http://127.0.0.1:$PORT"
+start_server "$STAGE/mock-plain.log" $PYTHON "$REPO/test/mock_api/server.py"
+export DATABRICKS_MOCK_PLAIN="http://127.0.0.1:$PORT"
 
 HTTP=0
 case "$TRANSPORT" in
-  stdio)  export STARTER_WORKER="$WORKER" ;;
-  launch) export STARTER_WORKER="launch:$WORKER" ;;
+  stdio)  export DATABRICKS_WORKER="$WORKER" ;;
+  launch) export DATABRICKS_WORKER="launch:$WORKER" ;;
   http)
     HTTP=1
     start_server "$STAGE/worker.log" "$WORKER" --http --port 0
-    export STARTER_WORKER="http://127.0.0.1:$PORT"
+    export DATABRICKS_WORKER="http://127.0.0.1:$PORT"
     ;;
   *) echo "::error::unknown TRANSPORT=$TRANSPORT (expected stdio|launch|http)"; exit 1 ;;
 esac
@@ -124,10 +125,10 @@ EOF
 rm -f "$STAGE/test/_warm.test"
 
 cat > "$STAGE/no_error_skip.json" <<'EOF'
-{"skip_error_messages": ["__vgi_starter_never_matches__"]}
+{"skip_error_messages": ["__vgi_databricks_never_matches__"]}
 EOF
 
-echo "Running test/sql over $TRANSPORT (worker: $STARTER_WORKER)"
+echo "Running test/sql over $TRANSPORT (worker: $DATABRICKS_WORKER)"
 LOG="$STAGE/unittest.log"
 rc=0
 ( cd "$STAGE" && "$HAYBARN_UNITTEST" --keep-home --test-dir "$STAGE" \

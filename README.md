@@ -1,62 +1,40 @@
-<!-- managed-by: vgi-starters (edit upstream in shared/README.md.tmpl, then run tools/render.py) -->
 <p align="center">
   <img src="https://query.farm/media-kit/products/vgi/vgi-logo.png" alt="Vector Gateway Interface (VGI)" width="320">
 </p>
 
-<p align="center"><em>A Query.Farm VGI worker for DuckDB, written in Python.</em></p>
+# Query Databricks Jobs, Clusters and Query History in DuckDB
 
-# VGI Starter Worker — Python
+> **vgi-databricks** · a [Query.Farm](https://query.farm) VGI worker
 
-[![CI](https://github.com/Query-farm/vgi-starter-python/actions/workflows/ci.yml/badge.svg)](https://github.com/Query-farm/vgi-starter-python/actions/workflows/ci.yml)
+[![CI](https://github.com/Query-farm/vgi-databricks/actions/workflows/ci.yml/badge.svg)](https://github.com/Query-farm/vgi-databricks/actions/workflows/ci.yml)
 [![vgi worker: query.farm](https://query.farm/media-kit/shields/vgi-worker.svg)](https://query.farm)
 
-[VGI](https://query.farm/vgi) lets DuckDB call functions that live in a separate
-process: your code, in any language, exposed as ordinary SQL. This worker adds
-three example functions that you rename and replace with your own:
+The Databricks workspace **control plane** as SQL tables: Lakeflow Jobs and every run and task
+attempt, run output and errors, clusters and their events, cluster policies, instance pools, SQL
+warehouses and the SQL query history, Lakeflow Declarative (DLT) pipelines with their updates and
+event logs, Git folders, secret scope names and the workspace tree. It works with AWS, Azure and
+GCP workspaces through the REST API (2.0 / 2.1 / 2.2), and it is read-only.
 
-| Function | Kind | Shows you how to |
-|---|---|---|
-| `greet(name)` / `greet(name, style)` | scalar | vectorize over a column, overload, constrain a constant |
-| `sequence_table(count, step := 1)` | table | stream rows in batches, take named arguments |
-| `fetch_items(base_url, page_size := 100)` | table | page through a REST API, retry, read a secret |
+```sql
+-- Which tasks failed in last night's job runs, and with what message?
+SELECT r.run_name, r.run_id, t.task_key, t.state_message
+FROM databricks.main.job_runs r
+JOIN databricks.main.job_run_tasks t USING (run_id)
+WHERE r.result_state = 'FAILED' AND r.start_time >= TIMESTAMPTZ '2026-11-14 00:00:00+00'
+  AND t.result_state = 'FAILED';
 
-<!-- template-only:start -->
-## Use this template
-
-This repository is a **template**. Click **Use this template** on GitHub, or:
-
-```bash
-gh repo create my-org/weather-worker --template Query-farm/vgi-starter-python --private --clone
-cd weather-worker
-make init NAME=weather     # renames catalog, package, binary, env vars; removes this section
-make check                 # lint + tests over every transport + metadata score
+-- The error and stack trace of every task of one run:
+SELECT task_key, error, error_trace FROM databricks.main.run_output(2002) WHERE error IS NOT NULL;
 ```
 
-Prefer to work with an AI coding agent? `make init` first, then hand it
-[AGENTS.md](AGENTS.md). See [Using with coding agents](#using-with-coding-agents).
+The `start_time` range and the "terminated" state implied by `result_state` go to the Jobs API
+as `start_time_from` and `completed_only`, so the worker reads only last night's finished runs.
 
-Starters exist for [Python](https://github.com/Query-farm/vgi-starter-python),
-[TypeScript](https://github.com/Query-farm/vgi-starter-typescript),
-[Go](https://github.com/Query-farm/vgi-starter-go),
-[Rust](https://github.com/Query-farm/vgi-starter-rust),
-[Java](https://github.com/Query-farm/vgi-starter-java) and
-[C#](https://github.com/Query-farm/vgi-starter-csharp). They are generated from
-[Query-farm/vgi-starters](https://github.com/Query-farm/vgi-starters); send
-changes there.
-<!-- template-only:end -->
+This is not a connector for Databricks *table data*: use a Databricks SQL / Unity Catalog
+connector for that. Billable usage (`system.billing`) is out of scope too: query it with SQL in
+Databricks.
 
 ## Quick start
-
-**Prerequisites:** Python 3.13+ and [uv](https://docs.astral.sh/uv/) (it runs the SQL
-test runner and the metadata checker).
-
-```bash
-make build
-```
-
-Then open DuckDB 2.0 or [Haybarn](https://query.farm/products/haybarn) and attach the
-worker. `LOCATION` is the command DuckDB runs to start it; use an absolute path,
-because a relative one resolves against DuckDB's working directory.
 
 **DuckDB 2.0:**
 
@@ -65,250 +43,148 @@ SET allow_extension_repositories = 'allowed';
 CREATE EXTENSION REPOSITORY IF NOT EXISTS query_farm WITH PREFIX 'https://duckdb-extensions.query.farm';
 INSTALL vgi FROM query_farm;
 LOAD vgi FROM query_farm;
-ATTACH 'starter' (TYPE vgi, LOCATION '/abs/path/to/vgi-starter-python/.venv/bin/vgi-starter-worker');
+
+ATTACH 'databricks' (TYPE vgi,
+  LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-databricks@v0.1.0 vgi-databricks-worker');
+
+-- Credentials go in a DuckDB secret, created after ATTACH (which registers the secret type).
+CREATE SECRET dbx (TYPE databricks, HOST 'https://dbc-a1b2c3d4-e5f6.cloud.databricks.com',
+                   TOKEN 'dapi...');
+
+SELECT name, schedule_cron, trigger_type, task_count FROM databricks.main.jobs ORDER BY name;
 ```
 
-**Haybarn 2.0** (`uvx haybarn-cli`):
+**Haybarn 2.0** (`uvx haybarn-cli`): use `INSTALL vgi FROM community; LOAD vgi;` and the same
+`ATTACH`.
 
-```sql
-INSTALL vgi FROM community;
-LOAD vgi;
-ATTACH 'starter' (TYPE vgi, LOCATION '/abs/path/to/vgi-starter-python/.venv/bin/vgi-starter-worker');
-```
+**From a checkout:** `make build`, then use
+`LOCATION '/abs/path/to/vgi-databricks/.venv/bin/vgi-databricks-worker'`.
 
-Now call the functions:
+## Credentials
 
-```sql
-SELECT starter.main.greet('Ada');                         -- Hi, Ada!
-SELECT starter.main.greet('Ada', 'formal');               -- Good day, Ada.
-SELECT * FROM starter.main.sequence_table(5, step := 2) ORDER BY n;
-```
+Every table reads the one `databricks` secret in the session:
 
-`fetch_items` pages through a REST API. Try it against the public demo API (25 fixed items):
-
-```sql
-SELECT category, count(*) AS items, round(avg(price), 2) AS avg_price
-FROM starter.main.fetch_items('https://vgi-starter-api.query-farm.services/v1')
-GROUP BY category ORDER BY category;
-```
-
-If an older cached extension misbehaves, refresh it with `FORCE INSTALL vgi FROM query_farm;`
-(DuckDB) or `FORCE INSTALL vgi FROM community;` (Haybarn).
-
-## Using it in a pipeline
-
-Worker functions compose with everything else in DuckDB:
-
-```sql
--- Materialize an API into a local table.
-CREATE TABLE items AS SELECT * FROM starter.main.fetch_items('https://vgi-starter-api.query-farm.services/v1');
-
--- Join it with local files.
-SELECT i.name, i.price, s.units
-FROM items i JOIN 'sales.parquet' s ON s.item_id = i.id;
-
--- Call a scalar per row of another table.
-SELECT customer, starter.main.greet(customer, 'formal') FROM read_csv('customers.csv');
-```
-
-## Project layout
-
-```
-src/starter_worker/
-  worker.py        # assembles the catalog; add new functions to FUNCTIONS
-  meta.py          # catalog/schema metadata + helpers (object_tags, column)
-  greet.py         # scalar example (overloads, ConstParam choices)
-  sequence.py      # table function example (named args, streaming state)
-  fetch_items.py   # REST API table function (pagination, retries, secrets)
-tests/             # pytest unit tests (in-process client)
-test/sql/          # sqllogictest files run through DuckDB
-test/mock_api/     # offline mock of the REST API used by tests
-examples/          # recipes: pushdown, caching, catalog tables, aggregates, COPY …
-ci/                # integration harness used by `make test-sql` and CI
-scripts/           # vgi_template.py (init / template-diff)
-vgi-agent-tests.yaml  # private graders for the agent test tasks
-```
-
-## Adding a function
-
-1. Create `src/starter_worker/<name>.py`. Copy the closest example: `greet.py` for a
-   scalar, `sequence.py` for a generator, `fetch_items.py` for an API.
-2. Declare arguments with `Annotated[..., Param(...)]`/`ConstParam(...)` (scalars) or a
-   frozen dataclass of `Annotated[..., Arg(...)]` (table functions). Use `Arg(0, ...)`
-   for positional arguments and `Arg("name", default=...)` for named ones.
-3. Give the class a `class Meta` with `name`, `description`, `tags=object_tags(...)`
-   and `examples`.
-4. Add the class to `FUNCTIONS` in `src/starter_worker/worker.py`.
-
-**Which kind of function?**
-
-| You want to… | Use |
+| Field | Meaning |
 |---|---|
-| compute one value per input row | a **scalar** function |
-| return a set of rows from arguments (an API, a file, a generator) | a **table** function |
-| transform or aggregate the rows of a query | a **table in-out** function or an **aggregate** |
-| expose a fixed dataset by name (`SELECT * FROM starter.main.t`) | a **catalog table** |
-| write data out to a file or service | `COPY … TO` with a copy function |
-| accept `INSERT` / `UPDATE` / `DELETE` | a catalog table with insert/update/delete functions |
-
-The [examples/](examples/) folder has a recipe for most of these. Writable tables have no
-recipe:
-
-A writable table is a catalog `Table` that names a table in-out function per operation in
-`insert_function`, `update_function` and `delete_function`, with the richest result each one
-produces in `write_result_modes`. The helpers in `vgi.write_results` (`write_options`,
-`write_result_schema`, `write_result_batch`, `row_id_field`) read DuckDB's `write_options`
-argument and build the result. UPDATE and DELETE need a scan function that emits
-`row_id_field()` and declares projection pushdown. Transactions: override `attach_supports_transactions`
-and `catalog_transaction_begin` / `_commit` / `_rollback` on the catalog. Since VGI protocol 3.3
-a table's scan and write functions are table-only: hidden from `duckdb_functions()` and not
-callable from SQL. Set `expose_scan=True` on the table to keep the scan callable as an ordinary
-table function too (write functions never are). See
-[Writable tables](https://github.com/Query-farm/vgi-python/blob/main/docs/catalog-interface.md#writable-tables)
-in the vgi-python docs.
-
-## Secrets and configuration
-
-`fetch_items` shows the recommended pattern. A bearer token comes from a DuckDB secret
-when one exists, and from an environment variable otherwise:
+| `HOST` (required) | Workspace URL, e.g. `https://dbc-….cloud.databricks.com`, `https://adb-….azuredatabricks.net`, `https://….gcp.databricks.com`. A bare host name gets `https://`. |
+| `TOKEN` | Personal access token, sent as a bearer token. |
+| `CLIENT_ID`, `CLIENT_SECRET` | OAuth machine-to-machine: a service principal's OAuth secret, exchanged at `<HOST>/oidc/v1/token` (client credentials, scope `all-apis`). The token is cached per process and refreshed on expiry or a 401. |
+| `AZURE_TOKEN` | An Azure AD (Entra ID) access token for the Azure Databricks resource. |
+| `AUTH_TYPE` | `auto` (default: `TOKEN`, then `CLIENT_ID`/`CLIENT_SECRET`, then `AZURE_TOKEN`), `pat`, `oauth-m2m` or `azure`. |
+| `PAGE_SIZE` | Items per API page (capped at each endpoint's maximum). |
+| `TIMEOUT` | Per-request timeout in seconds (default 30). |
 
 ```sql
-CREATE SECRET (TYPE starter_api, TOKEN 'your-token');      -- per session, never logged
+-- OAuth M2M with a service principal
+CREATE SECRET dbx (TYPE databricks, HOST 'https://adb-1234567890123456.7.azuredatabricks.net',
+                   CLIENT_ID '...', CLIENT_SECRET '...');
+-- Azure AD token (e.g. from `az account get-access-token --resource 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d`)
+CREATE SECRET dbx (TYPE databricks, HOST 'https://adb-….azuredatabricks.net', AZURE_TOKEN '...');
 ```
 
-```bash
-STARTER_API_TOKEN=your-token make run-http                # for servers and containers
-```
+Credentials are read from the secret on every call. They are never written to logs, error
+messages or the scan cursor, and nothing is read from environment variables. The principal only
+needs read permissions (`CAN VIEW` on jobs and clusters, `CAN MONITOR` on warehouses for other
+users' query history, and so on): the worker calls GET endpoints and the read-only cluster events
+query.
 
-Try it: the demo API's `/v1/auth` endpoint needs the published token `demo-token`.
+## Tables and functions
+
+Schema `main`:
+
+| Table / function | One row per | Pushed down to the API |
+|---|---|---|
+| `jobs` | job: schedule / trigger, tasks (`STRUCT[]`), job clusters, tags (`MAP`), settings (`JSON`) | `job_id` (jobs/get), `name =` |
+| `job_runs` | job run (also one-time submit runs) | `run_id` (runs/get), `job_id`, `start_time` range, active vs completed (from `life_cycle_state`, `status` or any `result_state`), `run_type` |
+| `job_run_tasks` | task **attempt** (retries are separate rows) | the parent run's `run_id`, `job_id`, `start_time` |
+| `run_output(run_id, include_result := false, max_log_chars := 65536)` | task run of a job run (or one task run) | — |
+| `clusters` | cluster (all-purpose, and job clusters from the last 30 days) | `cluster_id` (clusters/get), `state`, `cluster_source`, `policy_id` |
+| `cluster_events` | cluster event | `cluster_id`, `timestamp` range, `type` |
+| `cluster_policies` | cluster policy | — |
+| `instance_pools` | instance pool with usage stats | — |
+| `sql_warehouses` | SQL warehouse | `warehouse_id` |
+| `query_history` | SQL statement | `query_start_time` range, `warehouse_id`, `user_id`, `status`, `query_id` |
+| `pipelines` | declarative pipeline | `pipeline_id`, `name =` |
+| `pipeline_updates` | pipeline update | `pipeline_id` |
+| `pipeline_events` | pipeline event-log entry | `pipeline_id`, `level`, `event_id`, `timestamp` range |
+| `repos` | Git folder | `repo_id`, `path =` |
+| `secret_scopes` | secret scope (name and backend only) | — |
+| `workspace_objects(path, recursive := false)` | notebook / file / folder under a path | — |
+
+Schema `unified` holds `runs` and `task_runs` with exactly the columns every Query.Farm
+orchestrator worker (Airflow, Dagster, Prefect, Temporal, dbt, GitHub Actions) uses, so you can
+`UNION ALL` them, plus the scalar `unified_status(state)`:
 
 ```sql
-SELECT count(*) FROM starter.main.fetch_items('https://vgi-starter-api.query-farm.services/v1/auth');   -- fails: HTTP 401
-CREATE SECRET (TYPE starter_api, TOKEN 'demo-token');
-SELECT count(*) FROM starter.main.fetch_items('https://vgi-starter-api.query-farm.services/v1/auth');   -- 25
+SELECT orchestrator, pipeline, status, count(*) AS runs
+FROM (SELECT * FROM databricks.unified.runs UNION ALL SELECT * FROM airflow.unified.runs)
+WHERE started_at >= TIMESTAMPTZ '2026-11-01'
+GROUP BY ALL ORDER BY ALL;
 ```
 
-Never bake credentials into the image or the source. If a function can't run without
-real credentials, its examples can't execute in CI either. Set `execute: false` on the
-metadata check for that worker (see `.github/workflows/ci.yml`), and add
-`LINT_ARGS ?= --no-execute` to the Makefile so local runs match.
+Databricks specifics in `unified`: `run_id` is the Jobs run id as text and `pipeline` the run
+name; `raw_status` is `result_state` once terminated, else `life_cycle_state`; `UPSTREAM_FAILED`
+and `UPSTREAM_CANCELED` map to `skipped` (each failure counts once, upstream), `CANCELED` to
+`cancelled`, `PERIODIC`/`CONTINUOUS` triggers to `schedule`, `ONE_TIME` to `manual`,
+`FILE_ARRIVAL` to `sensor`, `TABLE` to `event` and submit runs to `api`. Databricks keeps one
+creation time per run, so `queued_at = started_at = start_time`. `task_runs` has one row per
+attempt, with a 1-based `attempt` (`attempt_number + 1`).
+
+### How pushdown and paging work
+
+Each table translates DuckDB's pushed-down filters into the API's own parameters (see the table
+above), and DuckDB re-checks every predicate, so a translation only ever narrows what is read.
+A small closed integer range or `IN` list on an id (`job_id IN (101, 102)`) becomes one `get` per
+id. Without a `cluster_id` / `pipeline_id`, `cluster_events`, `pipeline_updates` and
+`pipeline_events` read every listed cluster or pipeline.
+
+The scan cursor is `(listing, page token, fan-out ids)`. Databricks page tokens are opaque and
+stateless, so a scan resumes on any worker process (the HTTP transport) and holds no credentials.
+429 and 502/503/504 responses are retried with backoff that honours `Retry-After`.
+
+### Secrets never leak
+
+* `secret_scopes` lists names and backends; the worker never calls an API that returns secret
+  values.
+* Spark config (`clusters.spark_conf`), job settings (`jobs.settings`), run parameters
+  (`job_runs.job_parameters`) and event details are masked: a value under a secret-looking key
+  (password, token, secret, key, credential, …) or that looks like a credential (`dapi…` tokens,
+  JWTs, private keys, URLs with passwords) becomes `***`. `{{secrets/scope/key}}` references are
+  kept.
+* `run_output` returns the notebook exit value only with `include_result := true`, and cuts logs
+  and stack traces to `max_log_chars`.
 
 ## Testing
 
-```bash
-make test-unit                 # fast Python unit tests
-make test-sql                  # test/sql/*.test through DuckDB (stdio)
-make test-sql TRANSPORT=http   # …over HTTP (also: launch)
-make check                     # everything CI runs
+There is no local Databricks, so the tests run against a strict replay
+(`test/mock_api/server.py`) of a fictitious workspace (`test/fixtures/workspace.json`, generated
+by `test/fixtures/build_workspace.py` from the response shapes in the REST API reference). The
+replay enforces auth (PAT, OAuth M2M token exchange, Azure AD token), rejects any undocumented
+query parameter or page size, binds page tokens to their filters, rate-limits the first request
+to every path with a 429, pages task arrays, and logs every request so the SQL tests can assert
+what was pushed down. CI needs no network.
+
+```sh
+make check              # ruff, mypy, pydoclint, pytest, SQL tests (stdio, launch, http), vgi-lint
+make test-sql TRANSPORT=stdio
 ```
-
-`test/sql/*.test` files are [sqllogictest](https://duckdb.org/docs/stable/dev/sqllogictest/intro)
-scripts. `ci/run-integration.sh` runs them against your worker and fails on any
-unexpected skip, so a broken transport can't hide behind a green run.
-`fetch_items` is tested against `test/mock_api/server.py` so tests are fast and
-offline.
-
-**Testing against real data:** put live tests in their own `.test` file that starts with
-`require-env STARTER_LIVE`. They run only when that variable is set. Add the skip reason
-to `EXPECTED_SKIP_REASONS` in CI.
-
-## Metadata and the quality score
-
-DuckDB, agents and documentation tools discover your functions through their metadata:
-titles, descriptions, argument docs, examples and keywords.
-[vgi-lint](https://github.com/Query-farm/vgi-lint-check) checks it, and CI runs it on
-every push. Its settings live in `vgi-lint.toml`, which `make lint-explain`,
-`vgi-lint lint`, and CI all read. This template scores 100/100 with no findings.
-
-```bash
-make lint-explain                              # findings, each with its fix
-make lint-explain LINT_ARGS="--format agent"   # the same, grouped for coding agents
-make lint-ai                                   # optional: an agent must solve vgi-agent-tests.yaml
-```
-
-Each report also states an **assurance level**: how much was actually verified.
-
-| Level | Reached when | Here |
-|---|---|---|
-| L1 structural | the static metadata is clean | workers that need real credentials (`execute: false` in CI) |
-| L2 behavioural | the examples also run and return what they claim | **the CI gate** |
-| L3 semantic | an agent solves the worker's own test tasks, and the docs are reviewed | `make lint-ai`, before publishing |
-
-- **How strict.** Your copy fails on warnings (`fail_on = "warning"` in `vgi-lint.toml`).
-  Raise it to `"info"` before you publish the worker for others.
-- **The linter isn't pinned.** It tracks the current quality bar, so a new rule can flag
-  metadata that passed yesterday. Fix it, or waive the finding.
-- **Waivers.** If a finding is genuinely wrong for your worker, waive it in
-  `vgi-lint.toml` with a `kind` and a `reason`.
-- **Existing workers.** If you're adding this gate to a worker that already has
-  findings, record them with `vgi-lint lint --baseline vgi-lint-baseline --update-baseline`
-  and set `baseline` in `vgi-lint.toml`. After that, only new findings fail.
-
-Metadata lives in `src/starter_worker/meta.py` and each function's `class Meta`.
-
-## Logging and debugging
-
-stdout carries the Arrow protocol, so **never print to stdout**. Log to stderr instead.
-Use the standard `logging` module (the SDK routes it to stderr); `--debug` or `--log-level DEBUG` turns it up.
-
-- Under DuckDB (stdio/launch), worker stderr shows up in DuckDB's error messages and
-  terminal.
-- In Docker it goes to `docker logs`.
-- `make debug` runs one query against the worker with debug logging on.
 
 ## Deploying
 
-The same binary serves stdio (DuckDB starts it locally) or HTTP (you host it):
-
-```bash
-docker build -t weather-worker .
-docker run -p 8000:8000 -e STARTER_API_TOKEN=... weather-worker   # health: GET /health
-```
-
-```sql
-ATTACH 'starter' (TYPE vgi, LOCATION 'https://workers.example.com/starter');
-```
-
-Put hosted workers behind TLS and authentication. See
-[authentication](https://query.farm/vgi/authentication) for bearer tokens and JWTs, and
-[distributing a worker](https://query.farm/vgi/distributing-a-worker) for packaging.
-Pass secrets with `-e` or your platform's secret manager.
-
-## Releasing
-
-Push a tag like `v0.1.0`. The release workflow builds the wheel and sdist, attaches them to the GitHub release, and (if you set the repository variable `PYPI_PUBLISH=true` and configure PyPI Trusted Publishing) publishes to PyPI, so users can run `uvx vgi-starter-worker`. Without PyPI, users install straight from the repo with `uvx --from git+https://github.com/Query-farm/vgi-starter-python@v0.1.0 vgi-starter-worker`. Every artifact is signed with cosign and
-carries SLSA build provenance. `ci/check-version.sh` makes sure the tag matches the
-version in `pyproject.toml`.
-
-## Using with coding agents
-
-[AGENTS.md](AGENTS.md) is written for AI coding agents (Claude Code reads it via
-`CLAUDE.md`; Codex, Cursor and others read it directly). It covers the commands, the
-recipe for adding a function, the metadata checklist and the sharp edges. A good first
-prompt:
-
-> Read AGENTS.md. Replace `fetch_items` with `forecast(lat DOUBLE, lon DOUBLE)` that calls
-> the Open-Meteo API. Include full metadata, a mock-server test and a `STARTER_LIVE` test.
-> You're done when `make check` passes.
-
-## Keeping up with the template
-
-`make template-diff` shows what changed upstream (CI, docs, examples) since your copy was
-made. Your copy records its template version in `.vgi-starter.json`.
-
-## Learn more
-
-- [What is VGI?](https://query.farm/vgi) · [Getting started](https://query.farm/vgi/getting-started) · [Building a worker](https://query.farm/vgi/building-a-worker)
-- [Python SDK docs](https://query.farm/vgi/docs/python/): [scalar tutorial](https://query.farm/vgi/docs/python/tutorial/scalar/), [table tutorial](https://query.farm/vgi/docs/python/tutorial/table/)
-- [Distributing a worker](https://query.farm/vgi/distributing-a-worker) · [Choosing a language](https://query.farm/vgi/languages) · [llms.txt](https://query.farm/vgi/llms.txt)
-- SDK source: [vgi-python](https://github.com/Query-farm/vgi-python) · RPC layer: [https://vgi-rpc-python.query.farm](https://vgi-rpc-python.query.farm)
+The same entry point serves stdio (DuckDB starts it) or HTTP (`vgi-databricks-worker --http
+--port 8000`, or the Dockerfile). With HTTP, credentials still come from the caller's DuckDB
+secret, never from the server's environment.
 
 ## Support
 
-Open an issue on this repository. For VGI itself, see [query.farm](https://query.farm).
+Open an issue on [Query-farm/vgi-databricks](https://github.com/Query-farm/vgi-databricks/issues).
+For VGI itself, see [query.farm](https://query.farm).
 
-## Authorship & license
+## Authorship & License
 
-The starter template is written by [Query.Farm](https://query.farm) and released under
-the [BSD Zero Clause License](LICENSE) (0BSD). Use it for anything, with no attribution
-required. Replace this section with your own license once the code is yours.
+Written by [Query.Farm](https://query.farm). Released under the [BSD Zero Clause License](LICENSE) (0BSD).
+
+Copyright 2026 Query Farm LLC - https://query.farm
+
+Databricks, Delta Live Tables and Lakeflow are trademarks of Databricks, Inc. This project is not
+affiliated with or endorsed by Databricks.

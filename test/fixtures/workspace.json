@@ -1,0 +1,2419 @@
+{
+ "cluster_events": [
+  {
+   "cluster_id": "0915-120000-shared01",
+   "details": {
+    "user": "alice@example.com"
+   },
+   "timestamp": 1789473600000,
+   "type": "CREATING"
+  },
+  {
+   "cluster_id": "0915-120000-shared01",
+   "details": {
+    "user": "alice@example.com"
+   },
+   "timestamp": 1794643200000,
+   "type": "STARTING"
+  },
+  {
+   "cluster_id": "0915-120000-shared01",
+   "details": {
+    "current_num_workers": 1,
+    "target_num_workers": 1
+   },
+   "timestamp": 1794643500000,
+   "type": "RUNNING"
+  },
+  {
+   "cluster_id": "0915-120000-shared01",
+   "details": {
+    "cause": "AUTOSCALE",
+    "current_num_workers": 1,
+    "target_num_workers": 4
+   },
+   "timestamp": 1794650400000,
+   "type": "RESIZING"
+  },
+  {
+   "cluster_id": "0915-120000-shared01",
+   "details": {
+    "current_num_workers": 4,
+    "target_num_workers": 4
+   },
+   "timestamp": 1794650640000,
+   "type": "UPSIZE_COMPLETED"
+  },
+  {
+   "cluster_id": "0915-120000-shared01",
+   "details": {
+    "cause": "AUTOSCALE",
+    "current_num_workers": 4,
+    "target_num_workers": 2
+   },
+   "timestamp": 1794661200000,
+   "type": "RESIZING"
+  },
+  {
+   "cluster_id": "1114-020100-jc2002cd",
+   "details": {
+    "user": "6f1e2d3c-0000-4000-8000-00000000e7b0"
+   },
+   "timestamp": 1794621630000,
+   "type": "CREATING"
+  },
+  {
+   "cluster_id": "1114-020100-jc2002cd",
+   "details": {
+    "current_num_workers": 2,
+    "target_num_workers": 2
+   },
+   "timestamp": 1794621870000,
+   "type": "RUNNING"
+  },
+  {
+   "cluster_id": "1114-020100-jc2002cd",
+   "details": {
+    "reason": {
+     "code": "JOB_FINISHED",
+     "type": "SUCCESS"
+    }
+   },
+   "timestamp": 1794623160000,
+   "type": "TERMINATING"
+  },
+  {
+   "cluster_id": "1110-090000-adhoc01",
+   "details": {
+    "user": "alice@example.com"
+   },
+   "timestamp": 1794560400000,
+   "type": "STARTING"
+  },
+  {
+   "cluster_id": "1110-090000-adhoc01",
+   "details": {
+    "current_num_workers": 0,
+    "target_num_workers": 0
+   },
+   "timestamp": 1794560760000,
+   "type": "RUNNING"
+  },
+  {
+   "cluster_id": "1110-090000-adhoc01",
+   "details": {
+    "reason": {
+     "code": "INACTIVITY",
+     "parameters": {
+      "inactivity_duration_min": "30"
+     },
+     "type": "SUCCESS"
+    }
+   },
+   "timestamp": 1794569400000,
+   "type": "TERMINATING"
+  },
+  {
+   "cluster_id": "1101-100000-bobml01",
+   "details": {
+    "reason": {
+     "code": "USER_REQUEST",
+     "parameters": {
+      "username": "bob@example.com"
+     },
+     "type": "SUCCESS"
+    },
+    "user": "bob@example.com"
+   },
+   "timestamp": 1793635200000,
+   "type": "TERMINATING"
+  }
+ ],
+ "clusters": [
+  {
+   "autoscale": {
+    "max_workers": 4,
+    "min_workers": 1
+   },
+   "autotermination_minutes": 60,
+   "cluster_cores": 12.0,
+   "cluster_id": "0915-120000-shared01",
+   "cluster_memory_mb": 91500,
+   "cluster_name": "shared-analytics",
+   "cluster_source": "UI",
+   "creator_user_name": "alice@example.com",
+   "custom_tags": {
+    "cost-center": "42"
+   },
+   "data_security_mode": "USER_ISOLATION",
+   "default_tags": {
+    "ClusterId": "0915-120000-shared01",
+    "ClusterName": "shared-analytics",
+    "Creator": "alice@example.com",
+    "Vendor": "Databricks"
+   },
+   "driver_node_type_id": "i3.xlarge",
+   "last_restarted_time": 1794643500000,
+   "node_type_id": "i3.xlarge",
+   "num_workers": 2,
+   "policy_id": "pol-allpurpose-01",
+   "runtime_engine": "STANDARD",
+   "spark_conf": {
+    "spark.hadoop.javax.jdo.option.ConnectionPassword": "metastore-fixture-pass",
+    "spark.sql.shuffle.partitions": "64"
+   },
+   "spark_version": "15.4.x-scala2.12",
+   "start_time": 1794643200000,
+   "state": "RUNNING",
+   "state_message": ""
+  },
+  {
+   "autoscale": {
+    "max_workers": 8,
+    "min_workers": 2
+   },
+   "autotermination_minutes": 0,
+   "cluster_cores": 4.0,
+   "cluster_id": "1114-020100-jc2002cd",
+   "cluster_memory_mb": 30500,
+   "cluster_name": "job-101-run-2002",
+   "cluster_source": "JOB",
+   "creator_user_name": "6f1e2d3c-0000-4000-8000-00000000e7b0",
+   "data_security_mode": "SINGLE_USER",
+   "default_tags": {
+    "ClusterId": "1114-020100-jc2002cd",
+    "ClusterName": "job-101-run-2002",
+    "Creator": "6f1e2d3c-0000-4000-8000-00000000e7b0",
+    "JobId": "101",
+    "RunName": "nightly_etl",
+    "Vendor": "Databricks"
+   },
+   "driver_node_type_id": "i3.xlarge",
+   "node_type_id": "i3.xlarge",
+   "num_workers": 2,
+   "policy_id": "pol-jobs-001",
+   "runtime_engine": "STANDARD",
+   "single_user_name": "6f1e2d3c-0000-4000-8000-00000000e7b0",
+   "spark_version": "15.4.x-scala2.12",
+   "start_time": 1794621630000,
+   "state": "TERMINATED",
+   "state_message": "",
+   "terminated_time": 1794623160000,
+   "termination_reason": {
+    "code": "JOB_FINISHED",
+    "type": "SUCCESS"
+   }
+  },
+  {
+   "autotermination_minutes": 30,
+   "cluster_cores": 4.0,
+   "cluster_id": "1110-090000-adhoc01",
+   "cluster_memory_mb": 30500,
+   "cluster_name": "alice-adhoc",
+   "cluster_source": "UI",
+   "creator_user_name": "alice@example.com",
+   "data_security_mode": "SINGLE_USER",
+   "default_tags": {
+    "ClusterId": "1110-090000-adhoc01",
+    "ClusterName": "alice-adhoc",
+    "Creator": "alice@example.com",
+    "Vendor": "Databricks"
+   },
+   "driver_node_type_id": "i3.xlarge",
+   "instance_pool_id": "pool-general-01",
+   "node_type_id": "i3.xlarge",
+   "num_workers": 0,
+   "runtime_engine": "STANDARD",
+   "single_user_name": "alice@example.com",
+   "spark_version": "15.4.x-scala2.12",
+   "start_time": 1794560400000,
+   "state": "TERMINATED",
+   "state_message": "",
+   "terminated_time": 1794569400000,
+   "termination_reason": {
+    "code": "INACTIVITY",
+    "parameters": {
+     "inactivity_duration_min": "30"
+    },
+    "type": "SUCCESS"
+   }
+  },
+  {
+   "autotermination_minutes": 120,
+   "cluster_cores": 4.0,
+   "cluster_id": "1101-100000-bobml01",
+   "cluster_memory_mb": 30500,
+   "cluster_name": "bob-ml-gpu",
+   "cluster_source": "API",
+   "creator_user_name": "bob@example.com",
+   "data_security_mode": "USER_ISOLATION",
+   "default_tags": {
+    "ClusterId": "1101-100000-bobml01",
+    "ClusterName": "bob-ml-gpu",
+    "Creator": "bob@example.com",
+    "Vendor": "Databricks"
+   },
+   "driver_node_type_id": "g5.xlarge",
+   "node_type_id": "g5.xlarge",
+   "num_workers": 1,
+   "runtime_engine": "STANDARD",
+   "spark_version": "15.4.x-gpu-ml-scala2.12",
+   "start_time": 1793613600000,
+   "state": "TERMINATED",
+   "state_message": "",
+   "terminated_time": 1793635200000,
+   "termination_reason": {
+    "code": "USER_REQUEST",
+    "parameters": {
+     "username": "bob@example.com"
+    },
+    "type": "SUCCESS"
+   }
+  }
+ ],
+ "host": "https://dbc-fixture.cloud.databricks.com",
+ "instance_pools": [
+  {
+   "custom_tags": {
+    "team": "platform"
+   },
+   "enable_elastic_disk": true,
+   "idle_instance_autotermination_minutes": 15,
+   "instance_pool_id": "pool-general-01",
+   "instance_pool_name": "general-i3",
+   "max_capacity": 20,
+   "min_idle_instances": 1,
+   "node_type_id": "i3.xlarge",
+   "preloaded_spark_versions": [
+    "15.4.x-scala2.12"
+   ],
+   "state": "ACTIVE",
+   "stats": {
+    "idle_count": 1,
+    "pending_idle_count": 0,
+    "pending_used_count": 0,
+    "used_count": 0
+   }
+  },
+  {
+   "idle_instance_autotermination_minutes": 10,
+   "instance_pool_id": "pool-gpu-02",
+   "instance_pool_name": "gpu-g5",
+   "max_capacity": 4,
+   "min_idle_instances": 0,
+   "node_type_id": "g5.xlarge",
+   "state": "ACTIVE",
+   "stats": {
+    "idle_count": 0,
+    "pending_idle_count": 0,
+    "pending_used_count": 0,
+    "used_count": 0
+   }
+  }
+ ],
+ "jobs": [
+  {
+   "created_time": 1788256800000,
+   "creator_user_name": "alice@example.com",
+   "job_id": 101,
+   "run_as_user_name": "6f1e2d3c-0000-4000-8000-00000000e7b0",
+   "settings": {
+    "format": "MULTI_TASK",
+    "job_clusters": [
+     {
+      "job_cluster_key": "etl_cluster",
+      "new_cluster": {
+       "autoscale": {
+        "max_workers": 8,
+        "min_workers": 2
+       },
+       "node_type_id": "i3.xlarge",
+       "policy_id": "pol-jobs-001",
+       "spark_conf": {
+        "fs.azure.account.key.lake.dfs.core.windows.net": "{{secrets/lake/account-key}}",
+        "spark.databricks.delta.optimizeWrite.enabled": "true",
+        "spark.hadoop.fs.s3a.secret.key": "plaintext-fixture-secret"
+       },
+       "spark_version": "15.4.x-scala2.12"
+      }
+     }
+    ],
+    "max_concurrent_runs": 1,
+    "name": "nightly_etl",
+    "parameters": [
+     {
+      "default": "prod",
+      "name": "env"
+     },
+     {
+      "default": "hunter2-fixture",
+      "name": "db_password"
+     }
+    ],
+    "schedule": {
+     "pause_status": "UNPAUSED",
+     "quartz_cron_expression": "0 0 2 * * ?",
+     "timezone_id": "UTC"
+    },
+    "tags": {
+     "env": "prod",
+     "team": "data-eng"
+    },
+    "tasks": [
+     {
+      "description": "Land raw orders",
+      "job_cluster_key": "etl_cluster",
+      "notebook_task": {
+       "base_parameters": {
+        "date": "{{job.start_time.iso_date}}"
+       },
+       "notebook_path": "/Repos/alice@example.com/etl/ingest",
+       "source": "WORKSPACE"
+      },
+      "task_key": "ingest",
+      "timeout_seconds": 1800
+     },
+     {
+      "depends_on": [
+       {
+        "task_key": "ingest"
+       }
+      ],
+      "job_cluster_key": "etl_cluster",
+      "max_retries": 0,
+      "spark_python_task": {
+       "python_file": "/Repos/alice@example.com/etl/transform.py"
+      },
+      "task_key": "transform"
+     },
+     {
+      "depends_on": [
+       {
+        "task_key": "transform"
+       }
+      ],
+      "sql_task": {
+       "query": {
+        "query_id": "q-publish"
+       },
+       "warehouse_id": "wh-pro-02"
+      },
+      "task_key": "publish"
+     }
+    ],
+    "timeout_seconds": 7200
+   }
+  },
+  {
+   "created_time": 1791208800000,
+   "creator_user_name": "bob@example.com",
+   "job_id": 102,
+   "run_as_user_name": "bob@example.com",
+   "settings": {
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "flaky_report",
+    "tags": {
+     "team": "analytics"
+    },
+    "tasks": [
+     {
+      "existing_cluster_id": "0915-120000-shared01",
+      "notebook_task": {
+       "notebook_path": "/Users/bob@example.com/report",
+       "source": "WORKSPACE"
+      },
+      "task_key": "extract"
+     },
+     {
+      "depends_on": [
+       {
+        "task_key": "extract"
+       }
+      ],
+      "existing_cluster_id": "0915-120000-shared01",
+      "max_retries": 2,
+      "min_retry_interval_millis": 60000,
+      "notebook_task": {
+       "notebook_path": "/Users/bob@example.com/render",
+       "source": "WORKSPACE"
+      },
+      "task_key": "render"
+     },
+     {
+      "depends_on": [
+       {
+        "task_key": "render"
+       }
+      ],
+      "existing_cluster_id": "0915-120000-shared01",
+      "notebook_task": {
+       "notebook_path": "/Users/bob@example.com/email",
+       "source": "WORKSPACE"
+      },
+      "task_key": "email"
+     }
+    ],
+    "timeout_seconds": 0
+   }
+  },
+  {
+   "created_time": 1789891200000,
+   "creator_user_name": "alice@example.com",
+   "job_id": 103,
+   "run_as_user_name": "6f1e2d3c-0000-4000-8000-00000000e7b0",
+   "settings": {
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "dlt_refresh",
+    "schedule": {
+     "pause_status": "PAUSED",
+     "quartz_cron_expression": "0 30 0 * * ?",
+     "timezone_id": "America/New_York"
+    },
+    "tags": {
+     "team": "data-eng"
+    },
+    "tasks": [
+     {
+      "pipeline_task": {
+       "full_refresh": false,
+       "pipeline_id": "pl-orders-0001"
+      },
+      "task_key": "refresh"
+     }
+    ],
+    "timeout_seconds": 3600
+   }
+  },
+  {
+   "created_time": 1793523600000,
+   "creator_user_name": "alice@example.com",
+   "job_id": 104,
+   "run_as_user_name": "alice@example.com",
+   "settings": {
+    "environments": [
+     {
+      "environment_key": "default",
+      "spec": {
+       "client": "2"
+      }
+     }
+    ],
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "table_watch",
+    "tags": {
+     "team": "ml"
+    },
+    "tasks": [
+     {
+      "environment_key": "default",
+      "notebook_task": {
+       "notebook_path": "/Users/alice@example.com/projects/churn",
+       "source": "WORKSPACE"
+      },
+      "task_key": "score"
+     }
+    ],
+    "timeout_seconds": 0,
+    "trigger": {
+     "pause_status": "UNPAUSED",
+     "table_update": {
+      "condition": "ANY_UPDATED",
+      "table_names": [
+       "main.sales.orders"
+      ]
+     }
+    }
+   }
+  }
+ ],
+ "outputs": {
+  "3012": {
+   "error": "AnalysisException: [TABLE_OR_VIEW_NOT_FOUND] The table or view `main`.`raw`.`orders_v2` cannot be found.",
+   "error_trace": "Traceback (most recent call last):\n  File \"/Repos/alice@example.com/etl/transform.py\", line 41, in <module>\n    orders = spark.table(\"main.raw.orders_v2\")\npyspark.errors.exceptions.captured.AnalysisException: [TABLE_OR_VIEW_NOT_FOUND] The table or view `main`.`raw`.`orders_v2` cannot be found.\npyspark.errors.exceptions.captured.AnalysisException: [TABLE_OR_VIEW_NOT_FOUND] The table or view `main`.`raw`.`orders_v2` cannot be found.\npyspark.errors.exceptions.captured.AnalysisException: [TABLE_OR_VIEW_NOT_FOUND] The table or view `main`.`raw`.`orders_v2` cannot be found.\n",
+   "logs": "reading main.raw.orders_v2\n",
+   "logs_truncated": false
+  },
+  "3101": {
+   "notebook_output": {
+    "result": "extracted 42 rows",
+    "truncated": false
+   }
+  },
+  "3102": {
+   "error": "Py4JJavaError: An error occurred while calling o412.save: java.net.SocketException: Connection reset by peer",
+   "error_trace": "Py4JJavaError: An error occurred while calling o412.save.\n: java.net.SocketException: Connection reset by peer\n"
+  },
+  "3103": {
+   "notebook_output": {
+    "result": "{\"rows\": 42}",
+    "truncated": false
+   }
+  },
+  "3104": {
+   "notebook_output": {
+    "result": "sent",
+    "truncated": false
+   }
+  },
+  "3201": {
+   "error": "Pipeline update upd-o-3 failed: Flow 'orders_clean' has FAILED."
+  },
+  "3401": {
+   "logs": "Backfilling 2026-11-01..2026-11-12\nbackfilled 100 rows\nbackfilled 100 rows\nbackfilled 100 rows\nbackfilled 100 rows\nbackfilled 100 rows\nbackfilled 100 rows\nbackfilled 100 rows\nbackfilled 100 rows\nbackfilled 100 rows\nbackfilled 100 rows\nbackfilled 100 rows\nbackfilled 100 rows\ndone: 1200 rows\n",
+   "logs_truncated": false
+  }
+ },
+ "pipeline_events": {
+  "pl-events-0002": [
+   {
+    "details": {
+     "create_update": {
+      "cause": "API_CALL"
+     }
+    },
+    "event_type": "create_update",
+    "id": "ev-e-1",
+    "level": "INFO",
+    "maturity_level": "STABLE",
+    "message": "Update upd-e-2 started by API_CALL.",
+    "origin": {
+     "pipeline_id": "pl-events-0002",
+     "pipeline_name": "pl-events-0002",
+     "update_id": "upd-e-2"
+    },
+    "sequence": {
+     "data_plane_id": {
+      "seq_no": 1
+     }
+    },
+    "timestamp": "2026-11-14T06:00:00.000Z"
+   },
+   {
+    "details": {
+     "update_progress": {
+      "state": "COMPLETED"
+     }
+    },
+    "event_type": "update_progress",
+    "id": "ev-e-2",
+    "level": "INFO",
+    "maturity_level": "STABLE",
+    "message": "Update upd-e-2 is COMPLETED.",
+    "origin": {
+     "pipeline_id": "pl-events-0002",
+     "pipeline_name": "pl-events-0002",
+     "update_id": "upd-e-2"
+    },
+    "sequence": {
+     "data_plane_id": {
+      "seq_no": 2
+     }
+    },
+    "timestamp": "2026-11-14T06:09:00.000Z"
+   }
+  ],
+  "pl-orders-0001": [
+   {
+    "details": {
+     "create_update": {
+      "cause": "JOB_TASK"
+     }
+    },
+    "event_type": "create_update",
+    "id": "ev-o-1",
+    "level": "INFO",
+    "maturity_level": "STABLE",
+    "message": "Update upd-o-2 started by JOB_TASK.",
+    "origin": {
+     "pipeline_id": "pl-orders-0001",
+     "pipeline_name": "pl-orders-0001",
+     "update_id": "upd-o-2"
+    },
+    "sequence": {
+     "data_plane_id": {
+      "seq_no": 1
+     }
+    },
+    "timestamp": "2026-11-13T00:30:40.000Z"
+   },
+   {
+    "details": {
+     "update_progress": {
+      "state": "COMPLETED"
+     }
+    },
+    "event_type": "update_progress",
+    "id": "ev-o-2",
+    "level": "INFO",
+    "maturity_level": "STABLE",
+    "message": "Update upd-o-2 is COMPLETED.",
+    "origin": {
+     "pipeline_id": "pl-orders-0001",
+     "pipeline_name": "pl-orders-0001",
+     "update_id": "upd-o-2"
+    },
+    "sequence": {
+     "data_plane_id": {
+      "seq_no": 2
+     }
+    },
+    "timestamp": "2026-11-13T00:45:00.000Z"
+   },
+   {
+    "details": {
+     "create_update": {
+      "cause": "JOB_TASK"
+     }
+    },
+    "event_type": "create_update",
+    "id": "ev-o-3",
+    "level": "INFO",
+    "maturity_level": "STABLE",
+    "message": "Update upd-o-3 started by JOB_TASK.",
+    "origin": {
+     "pipeline_id": "pl-orders-0001",
+     "pipeline_name": "pl-orders-0001",
+     "update_id": "upd-o-3"
+    },
+    "sequence": {
+     "data_plane_id": {
+      "seq_no": 3
+     }
+    },
+    "timestamp": "2026-11-14T00:30:40.000Z"
+   },
+   {
+    "details": {
+     "flow_progress": {
+      "data_quality": {
+       "dropped_records": 12
+      }
+     }
+    },
+    "event_type": "flow_progress",
+    "id": "ev-o-4",
+    "level": "WARN",
+    "maturity_level": "STABLE",
+    "message": "Flow 'orders_clean' dropped 12 records failing expectation 'valid_amount'.",
+    "origin": {
+     "dataset_name": "orders_clean",
+     "flow_name": "orders_clean",
+     "pipeline_id": "pl-orders-0001",
+     "pipeline_name": "pl-orders-0001",
+     "update_id": "upd-o-3"
+    },
+    "sequence": {
+     "data_plane_id": {
+      "seq_no": 4
+     }
+    },
+    "timestamp": "2026-11-14T00:36:00.000Z"
+   },
+   {
+    "details": {
+     "flow_progress": {
+      "status": "FAILED"
+     }
+    },
+    "error": {
+     "exceptions": [
+      {
+       "class_name": "org.apache.spark.sql.AnalysisException",
+       "message": "[UNRESOLVED_COLUMN.WITH_SUGGESTION] A column `customer_idx` cannot be resolved."
+      }
+     ],
+     "fatal": false
+    },
+    "event_type": "flow_progress",
+    "id": "ev-o-5",
+    "level": "ERROR",
+    "maturity_level": "STABLE",
+    "message": "Flow 'orders_clean' has FAILED.",
+    "origin": {
+     "dataset_name": "orders_clean",
+     "flow_name": "orders_clean",
+     "pipeline_id": "pl-orders-0001",
+     "pipeline_name": "pl-orders-0001",
+     "update_id": "upd-o-3"
+    },
+    "sequence": {
+     "data_plane_id": {
+      "seq_no": 5
+     }
+    },
+    "timestamp": "2026-11-14T00:47:00.000Z"
+   },
+   {
+    "details": {
+     "update_progress": {
+      "state": "FAILED"
+     }
+    },
+    "error": {
+     "exceptions": [
+      {
+       "class_name": "com.databricks.pipelines.common.errors.UpdateFailedException",
+       "message": "Update failed because flow 'orders_clean' failed."
+      }
+     ],
+     "fatal": true
+    },
+    "event_type": "update_progress",
+    "id": "ev-o-6",
+    "level": "ERROR",
+    "maturity_level": "STABLE",
+    "message": "Update upd-o-3 is FAILED.",
+    "origin": {
+     "pipeline_id": "pl-orders-0001",
+     "pipeline_name": "pl-orders-0001",
+     "update_id": "upd-o-3"
+    },
+    "sequence": {
+     "data_plane_id": {
+      "seq_no": 6
+     }
+    },
+    "timestamp": "2026-11-14T00:47:30.000Z"
+   }
+  ]
+ },
+ "pipeline_updates": {
+  "pl-events-0002": [
+   {
+    "cause": "API_CALL",
+    "config": {
+     "id": "pl-events-0002"
+    },
+    "creation_time": 1794636000000,
+    "full_refresh": false,
+    "pipeline_id": "pl-events-0002",
+    "refresh_selection": [
+     "sessions"
+    ],
+    "state": "COMPLETED",
+    "update_id": "upd-e-2",
+    "validate_only": false
+   },
+   {
+    "cause": "USER_ACTION",
+    "config": {
+     "id": "pl-events-0002"
+    },
+    "creation_time": 1794290400000,
+    "full_refresh": false,
+    "pipeline_id": "pl-events-0002",
+    "state": "COMPLETED",
+    "update_id": "upd-e-1",
+    "validate_only": false
+   }
+  ],
+  "pl-orders-0001": [
+   {
+    "cause": "JOB_TASK",
+    "config": {
+     "id": "pl-orders-0001"
+    },
+    "creation_time": 1794616240000,
+    "full_refresh": false,
+    "pipeline_id": "pl-orders-0001",
+    "state": "FAILED",
+    "update_id": "upd-o-3",
+    "validate_only": false
+   },
+   {
+    "cause": "JOB_TASK",
+    "config": {
+     "id": "pl-orders-0001"
+    },
+    "creation_time": 1794529840000,
+    "full_refresh": false,
+    "pipeline_id": "pl-orders-0001",
+    "state": "COMPLETED",
+    "update_id": "upd-o-2",
+    "validate_only": false
+   },
+   {
+    "cause": "USER_ACTION",
+    "config": {
+     "id": "pl-orders-0001"
+    },
+    "creation_time": 1794443440000,
+    "full_refresh": true,
+    "pipeline_id": "pl-orders-0001",
+    "state": "COMPLETED",
+    "update_id": "upd-o-1",
+    "validate_only": false
+   }
+  ]
+ },
+ "pipelines": [
+  {
+   "creator_user_name": "alice@example.com",
+   "health": "UNHEALTHY",
+   "last_modified": 1794304800000,
+   "latest_updates": [
+    {
+     "creation_time": "2026-11-14T00:30:40.000Z",
+     "state": "FAILED",
+     "update_id": "upd-o-3"
+    },
+    {
+     "creation_time": "2026-11-13T00:30:40.000Z",
+     "state": "COMPLETED",
+     "update_id": "upd-o-2"
+    },
+    {
+     "creation_time": "2026-11-12T00:30:40.000Z",
+     "state": "COMPLETED",
+     "update_id": "upd-o-1"
+    }
+   ],
+   "name": "orders_dlt",
+   "pipeline_id": "pl-orders-0001",
+   "run_as_user_name": "6f1e2d3c-0000-4000-8000-00000000e7b0",
+   "spec": {
+    "catalog": "main",
+    "id": "pl-orders-0001",
+    "name": "orders_dlt",
+    "serverless": true,
+    "target": "sales"
+   },
+   "state": "FAILED"
+  },
+  {
+   "creator_user_name": "bob@example.com",
+   "health": "HEALTHY",
+   "last_modified": 1793527200000,
+   "latest_updates": [
+    {
+     "creation_time": "2026-11-14T06:00:00.000Z",
+     "state": "COMPLETED",
+     "update_id": "upd-e-2"
+    },
+    {
+     "creation_time": "2026-11-10T06:00:00.000Z",
+     "state": "COMPLETED",
+     "update_id": "upd-e-1"
+    }
+   ],
+   "name": "events_dlt",
+   "pipeline_id": "pl-events-0002",
+   "run_as_user_name": "bob@example.com",
+   "spec": {
+    "catalog": "main",
+    "id": "pl-events-0002",
+    "name": "events_dlt",
+    "serverless": true,
+    "target": "web"
+   },
+   "state": "IDLE"
+  }
+ ],
+ "policies": [
+  {
+   "created_at_timestamp": 1785574800000,
+   "creator_user_name": "alice@example.com",
+   "definition": "{\"autotermination_minutes\": {\"type\": \"range\", \"maxValue\": 120, \"defaultValue\": 60}, \"node_type_id\": {\"type\": \"allowlist\", \"values\": [\"i3.xlarge\", \"i3.2xlarge\"]}}",
+   "description": "Small interactive clusters with auto-termination.",
+   "is_default": false,
+   "max_clusters_per_user": 2,
+   "name": "All-purpose (small)",
+   "policy_id": "pol-allpurpose-01"
+  },
+  {
+   "created_at_timestamp": 1785576600000,
+   "creator_user_name": "alice@example.com",
+   "definition": "{\"cluster_type\": {\"type\": \"fixed\", \"value\": \"job\"}}",
+   "description": "Job clusters for scheduled pipelines.",
+   "is_default": false,
+   "name": "Job Compute",
+   "policy_family_id": "job-cluster",
+   "policy_id": "pol-jobs-001"
+  },
+  {
+   "created_at_timestamp": 1782864000000,
+   "creator_user_name": null,
+   "definition": "{\"spark_conf.spark.databricks.cluster.profile\": {\"type\": \"fixed\", \"value\": \"singleNode\"}}",
+   "description": "Single-node personal compute.",
+   "is_default": true,
+   "name": "Personal Compute",
+   "policy_family_id": "personal-vm",
+   "policy_id": "pol-personal-000"
+  }
+ ],
+ "queries": [
+  {
+   "duration": 1200,
+   "endpoint_id": "wh-pro-02",
+   "executed_as_user_id": 1001,
+   "executed_as_user_name": "alice@example.com",
+   "execution_end_time_ms": 1794646801190,
+   "is_final": true,
+   "lookup_key": "lk-01ef-q1",
+   "metrics": {
+    "compilation_time_ms": 150,
+    "execution_time_ms": 1050,
+    "read_bytes": 1048576,
+    "result_from_cache": false,
+    "rows_read_count": 125000,
+    "spill_to_disk_bytes": 0,
+    "total_time_ms": 1200
+   },
+   "query_end_time_ms": 1794646801200,
+   "query_id": "01ef-q1",
+   "query_start_time_ms": 1794646800000,
+   "query_text": "SELECT count(*) FROM main.sales.orders",
+   "rows_produced": 1,
+   "spark_ui_url": "https://dbc-fixture.cloud.databricks.com/sql/history?queryId=01ef-q1",
+   "statement_type": "SELECT",
+   "status": "FINISHED",
+   "user_id": 1001,
+   "user_name": "alice@example.com",
+   "warehouse_id": "wh-pro-02"
+  },
+  {
+   "duration": 300,
+   "endpoint_id": "wh-pro-02",
+   "error_message": "[TABLE_OR_VIEW_NOT_FOUND] The table or view `main`.`raw`.`orders_v2` cannot be found.",
+   "executed_as_user_id": 1002,
+   "executed_as_user_name": "bob@example.com",
+   "execution_end_time_ms": 1794647100290,
+   "is_final": true,
+   "lookup_key": "lk-01ef-q2",
+   "metrics": {
+    "compilation_time_ms": 150,
+    "execution_time_ms": 150,
+    "read_bytes": 0,
+    "result_from_cache": false,
+    "rows_read_count": 0,
+    "spill_to_disk_bytes": 0,
+    "total_time_ms": 300
+   },
+   "query_end_time_ms": 1794647100300,
+   "query_id": "01ef-q2",
+   "query_start_time_ms": 1794647100000,
+   "query_text": "SELECT * FROM main.raw.orders_v2",
+   "rows_produced": 0,
+   "spark_ui_url": "https://dbc-fixture.cloud.databricks.com/sql/history?queryId=01ef-q2",
+   "statement_type": "SELECT",
+   "status": "FAILED",
+   "user_id": 1002,
+   "user_name": "bob@example.com",
+   "warehouse_id": "wh-pro-02"
+  },
+  {
+   "duration": 40,
+   "endpoint_id": "wh-serverless-01",
+   "error_message": "[PARSE_SYNTAX_ERROR] Syntax error at or near 'SELEC'.",
+   "executed_as_user_id": 1002,
+   "executed_as_user_name": "bob@example.com",
+   "execution_end_time_ms": 1794650400030,
+   "is_final": true,
+   "lookup_key": "lk-01ef-q3",
+   "metrics": {
+    "compilation_time_ms": 40,
+    "execution_time_ms": 0,
+    "read_bytes": 0,
+    "result_from_cache": false,
+    "rows_read_count": 0,
+    "spill_to_disk_bytes": 0,
+    "total_time_ms": 40
+   },
+   "query_end_time_ms": 1794650400040,
+   "query_id": "01ef-q3",
+   "query_start_time_ms": 1794650400000,
+   "query_text": "SELEC 1",
+   "rows_produced": 0,
+   "spark_ui_url": "https://dbc-fixture.cloud.databricks.com/sql/history?queryId=01ef-q3",
+   "statement_type": "OTHER",
+   "status": "FAILED",
+   "user_id": 1002,
+   "user_name": "bob@example.com",
+   "warehouse_id": "wh-serverless-01"
+  },
+  {
+   "duration": 35500,
+   "endpoint_id": "wh-serverless-01",
+   "executed_as_user_id": 1001,
+   "executed_as_user_name": "alice@example.com",
+   "execution_end_time_ms": 1794654035490,
+   "is_final": true,
+   "lookup_key": "lk-01ef-q4",
+   "metrics": {
+    "compilation_time_ms": 150,
+    "execution_time_ms": 35350,
+    "read_bytes": 73400320,
+    "result_from_cache": false,
+    "rows_read_count": 5000,
+    "spill_to_disk_bytes": 1048576,
+    "total_time_ms": 35500
+   },
+   "query_end_time_ms": 1794654035500,
+   "query_id": "01ef-q4",
+   "query_start_time_ms": 1794654000000,
+   "query_text": "INSERT INTO main.sales.daily SELECT * FROM main.sales.orders_staging",
+   "rows_produced": 5000,
+   "spark_ui_url": "https://dbc-fixture.cloud.databricks.com/sql/history?queryId=01ef-q4",
+   "statement_type": "INSERT",
+   "status": "FINISHED",
+   "user_id": 1001,
+   "user_name": "alice@example.com",
+   "warehouse_id": "wh-serverless-01"
+  },
+  {
+   "duration": 120000,
+   "endpoint_id": "wh-pro-02",
+   "executed_as_user_id": 1003,
+   "executed_as_user_name": "6f1e2d3c-0000-4000-8000-00000000e7b0",
+   "execution_end_time_ms": 1794622919990,
+   "is_final": true,
+   "lookup_key": "lk-01ef-q5",
+   "metrics": {
+    "compilation_time_ms": 150,
+    "execution_time_ms": 119850,
+    "read_bytes": 524288000,
+    "result_from_cache": false,
+    "rows_read_count": 2500000,
+    "spill_to_disk_bytes": 0,
+    "total_time_ms": 120000
+   },
+   "query_end_time_ms": 1794622920000,
+   "query_id": "01ef-q5",
+   "query_start_time_ms": 1794622800000,
+   "query_text": "MERGE INTO main.sales.orders t USING main.sales.orders_staging s ON t.id = s.id WHEN MATCHED THEN UPDATE SET *",
+   "rows_produced": 4800,
+   "spark_ui_url": "https://dbc-fixture.cloud.databricks.com/sql/history?queryId=01ef-q5",
+   "statement_type": "MERGE",
+   "status": "FINISHED",
+   "user_id": 1003,
+   "user_name": "6f1e2d3c-0000-4000-8000-00000000e7b0",
+   "warehouse_id": "wh-pro-02"
+  },
+  {
+   "duration": 9000,
+   "endpoint_id": "wh-serverless-01",
+   "executed_as_user_id": 1001,
+   "executed_as_user_name": "alice@example.com",
+   "execution_end_time_ms": 1794657608990,
+   "is_final": true,
+   "lookup_key": "lk-01ef-q6",
+   "metrics": {
+    "compilation_time_ms": 150,
+    "execution_time_ms": 8850,
+    "read_bytes": 0,
+    "result_from_cache": false,
+    "rows_read_count": 0,
+    "spill_to_disk_bytes": 0,
+    "total_time_ms": 9000
+   },
+   "query_end_time_ms": 1794657609000,
+   "query_id": "01ef-q6",
+   "query_start_time_ms": 1794657600000,
+   "query_text": "SELECT * FROM main.sales.orders ORDER BY amount",
+   "rows_produced": 0,
+   "spark_ui_url": "https://dbc-fixture.cloud.databricks.com/sql/history?queryId=01ef-q6",
+   "statement_type": "SELECT",
+   "status": "CANCELED",
+   "user_id": 1001,
+   "user_name": "alice@example.com",
+   "warehouse_id": "wh-serverless-01"
+  },
+  {
+   "duration": 90,
+   "endpoint_id": "wh-serverless-01",
+   "executed_as_user_id": 1002,
+   "executed_as_user_name": "bob@example.com",
+   "execution_end_time_ms": 1794585600080,
+   "is_final": true,
+   "lookup_key": "lk-01ef-q7",
+   "metrics": {
+    "compilation_time_ms": 90,
+    "execution_time_ms": 0,
+    "read_bytes": 0,
+    "result_from_cache": true,
+    "rows_read_count": 0,
+    "spill_to_disk_bytes": 0,
+    "total_time_ms": 90
+   },
+   "query_end_time_ms": 1794585600090,
+   "query_id": "01ef-q7",
+   "query_start_time_ms": 1794585600000,
+   "query_text": "SELECT region, sum(amount) FROM main.sales.orders GROUP BY 1",
+   "rows_produced": 5,
+   "spark_ui_url": "https://dbc-fixture.cloud.databricks.com/sql/history?queryId=01ef-q7",
+   "statement_type": "SELECT",
+   "status": "FINISHED",
+   "user_id": 1002,
+   "user_name": "bob@example.com",
+   "warehouse_id": "wh-serverless-01"
+  },
+  {
+   "endpoint_id": "wh-pro-02",
+   "executed_as_user_id": 1001,
+   "executed_as_user_name": "alice@example.com",
+   "is_final": false,
+   "lookup_key": "lk-01ef-q8",
+   "metrics": {
+    "compilation_time_ms": 150,
+    "execution_time_ms": 59850,
+    "read_bytes": 0,
+    "result_from_cache": false,
+    "rows_read_count": 0,
+    "spill_to_disk_bytes": 0,
+    "total_time_ms": 60000
+   },
+   "query_id": "01ef-q8",
+   "query_start_time_ms": 1794706200000,
+   "query_text": "SELECT * FROM main.sales.orders_history",
+   "rows_produced": 0,
+   "spark_ui_url": "https://dbc-fixture.cloud.databricks.com/sql/history?queryId=01ef-q8",
+   "statement_type": "SELECT",
+   "status": "RUNNING",
+   "user_id": 1001,
+   "user_name": "alice@example.com",
+   "warehouse_id": "wh-pro-02"
+  }
+ ],
+ "repos": [
+  {
+   "branch": "main",
+   "head_commit_id": "7e0847ede61f07adede22e2bcce6050216489171",
+   "id": 501,
+   "path": "/Repos/alice@example.com/etl",
+   "provider": "gitHub",
+   "url": "https://github.com/example/etl.git"
+  },
+  {
+   "branch": "feature/charts",
+   "head_commit_id": "1d3b0d46a7b2d81e3de2a4a6a6a4d8fbc3b0a111",
+   "id": 502,
+   "path": "/Repos/bob@example.com/reports",
+   "provider": "gitLab",
+   "sparse_checkout": {
+    "patterns": [
+     "reports/"
+    ]
+   },
+   "url": "https://gitlab.com/example/reports.git"
+  }
+ ],
+ "runs": [
+  {
+   "attempt_number": 0,
+   "cleanup_duration": 0,
+   "creator_user_name": "6f1e2d3c-0000-4000-8000-00000000e7b0",
+   "end_time": 1794537600000,
+   "execution_duration": 0,
+   "format": "MULTI_TASK",
+   "job_id": 101,
+   "job_parameters": [
+    {
+     "default": "prod",
+     "name": "env",
+     "value": "prod"
+    },
+    {
+     "default": "hunter2-fixture",
+     "name": "db_password",
+     "value": "hunter2-fixture"
+    }
+   ],
+   "number_in_job": 1,
+   "original_attempt_run_id": 2001,
+   "queue_duration": 0,
+   "run_duration": 2400000,
+   "run_id": 2001,
+   "run_name": "nightly_etl",
+   "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/101/runs/2001",
+   "run_type": "JOB_RUN",
+   "setup_duration": 0,
+   "start_time": 1794535200000,
+   "state": {
+    "life_cycle_state": "TERMINATED",
+    "result_state": "SUCCESS",
+    "state_message": "",
+    "user_cancelled_or_timedout": false
+   },
+   "status": {
+    "state": "TERMINATED",
+    "termination_details": {
+     "code": "SUCCESS",
+     "message": "",
+     "type": "SUCCESS"
+    }
+   },
+   "tasks": [
+    {
+     "attempt_number": 0,
+     "cleanup_duration": 0,
+     "cluster_instance": {
+      "cluster_id": "1113-020100-jc2001ab",
+      "spark_context_id": "30010001"
+     },
+     "description": "Land raw orders",
+     "end_time": 1794535920000,
+     "execution_duration": 450000,
+     "job_cluster_key": "etl_cluster",
+     "notebook_task": {
+      "base_parameters": {
+       "date": "{{job.start_time.iso_date}}"
+      },
+      "notebook_path": "/Repos/alice@example.com/etl/ingest",
+      "source": "WORKSPACE"
+     },
+     "run_id": 3001,
+     "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/101/runs/3001",
+     "setup_duration": 240000,
+     "start_time": 1794535230000,
+     "state": {
+      "life_cycle_state": "TERMINATED",
+      "result_state": "SUCCESS",
+      "state_message": "",
+      "user_cancelled_or_timedout": false
+     },
+     "status": {
+      "state": "TERMINATED",
+      "termination_details": {
+       "code": "SUCCESS",
+       "message": "",
+       "type": "SUCCESS"
+      }
+     },
+     "task_key": "ingest",
+     "timeout_seconds": 1800
+    },
+    {
+     "attempt_number": 0,
+     "cleanup_duration": 0,
+     "cluster_instance": {
+      "cluster_id": "1113-020100-jc2001ab",
+      "spark_context_id": "30020001"
+     },
+     "depends_on": [
+      {
+       "task_key": "ingest"
+      }
+     ],
+     "end_time": 1794537060000,
+     "execution_duration": 1135000,
+     "job_cluster_key": "etl_cluster",
+     "run_id": 3002,
+     "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/101/runs/3002",
+     "setup_duration": 0,
+     "spark_python_task": {
+      "python_file": "/Repos/alice@example.com/etl/transform.py"
+     },
+     "start_time": 1794535925000,
+     "state": {
+      "life_cycle_state": "TERMINATED",
+      "result_state": "SUCCESS",
+      "state_message": "",
+      "user_cancelled_or_timedout": false
+     },
+     "status": {
+      "state": "TERMINATED",
+      "termination_details": {
+       "code": "SUCCESS",
+       "message": "",
+       "type": "SUCCESS"
+      }
+     },
+     "task_key": "transform"
+    },
+    {
+     "attempt_number": 0,
+     "cleanup_duration": 0,
+     "depends_on": [
+      {
+       "task_key": "transform"
+      }
+     ],
+     "end_time": 1794537600000,
+     "execution_duration": 535000,
+     "run_id": 3003,
+     "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/101/runs/3003",
+     "setup_duration": 0,
+     "sql_task": {
+      "query": {
+       "query_id": "q-publish"
+      },
+      "warehouse_id": "wh-pro-02"
+     },
+     "start_time": 1794537065000,
+     "state": {
+      "life_cycle_state": "TERMINATED",
+      "result_state": "SUCCESS",
+      "state_message": "",
+      "user_cancelled_or_timedout": false
+     },
+     "status": {
+      "state": "TERMINATED",
+      "termination_details": {
+       "code": "SUCCESS",
+       "message": "",
+       "type": "SUCCESS"
+      }
+     },
+     "task_key": "publish"
+    }
+   ],
+   "trigger": "PERIODIC"
+  },
+  {
+   "attempt_number": 0,
+   "cleanup_duration": 0,
+   "creator_user_name": "6f1e2d3c-0000-4000-8000-00000000e7b0",
+   "end_time": 1794623100000,
+   "execution_duration": 0,
+   "format": "MULTI_TASK",
+   "job_id": 101,
+   "job_parameters": [
+    {
+     "default": "prod",
+     "name": "env",
+     "value": "prod"
+    },
+    {
+     "default": "hunter2-fixture",
+     "name": "db_password",
+     "value": "hunter2-fixture"
+    }
+   ],
+   "number_in_job": 2,
+   "original_attempt_run_id": 2002,
+   "queue_duration": 0,
+   "run_duration": 1500000,
+   "run_id": 2002,
+   "run_name": "nightly_etl",
+   "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/101/runs/2002",
+   "run_type": "JOB_RUN",
+   "setup_duration": 0,
+   "start_time": 1794621600000,
+   "state": {
+    "life_cycle_state": "TERMINATED",
+    "result_state": "FAILED",
+    "state_message": "Task transform failed with message: Workload failed, see run output for details.",
+    "user_cancelled_or_timedout": false
+   },
+   "status": {
+    "state": "TERMINATED",
+    "termination_details": {
+     "code": "RUN_EXECUTION_ERROR",
+     "message": "Task transform failed.",
+     "type": "CLIENT_ERROR"
+    }
+   },
+   "tasks": [
+    {
+     "attempt_number": 0,
+     "cleanup_duration": 0,
+     "cluster_instance": {
+      "cluster_id": "1114-020100-jc2002cd",
+      "spark_context_id": "30110001"
+     },
+     "description": "Land raw orders",
+     "end_time": 1794622380000,
+     "execution_duration": 500000,
+     "job_cluster_key": "etl_cluster",
+     "notebook_task": {
+      "base_parameters": {
+       "date": "{{job.start_time.iso_date}}"
+      },
+      "notebook_path": "/Repos/alice@example.com/etl/ingest",
+      "source": "WORKSPACE"
+     },
+     "run_id": 3011,
+     "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/101/runs/3011",
+     "setup_duration": 250000,
+     "start_time": 1794621630000,
+     "state": {
+      "life_cycle_state": "TERMINATED",
+      "result_state": "SUCCESS",
+      "state_message": "",
+      "user_cancelled_or_timedout": false
+     },
+     "status": {
+      "state": "TERMINATED",
+      "termination_details": {
+       "code": "SUCCESS",
+       "message": "",
+       "type": "SUCCESS"
+      }
+     },
+     "task_key": "ingest",
+     "timeout_seconds": 1800
+    },
+    {
+     "attempt_number": 0,
+     "cleanup_duration": 0,
+     "cluster_instance": {
+      "cluster_id": "1114-020100-jc2002cd",
+      "spark_context_id": "30120001"
+     },
+     "depends_on": [
+      {
+       "task_key": "ingest"
+      }
+     ],
+     "end_time": 1794623100000,
+     "execution_duration": 715000,
+     "job_cluster_key": "etl_cluster",
+     "run_id": 3012,
+     "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/101/runs/3012",
+     "setup_duration": 0,
+     "spark_python_task": {
+      "python_file": "/Repos/alice@example.com/etl/transform.py"
+     },
+     "start_time": 1794622385000,
+     "state": {
+      "life_cycle_state": "TERMINATED",
+      "result_state": "FAILED",
+      "state_message": "Workload failed, see run output for details",
+      "user_cancelled_or_timedout": false
+     },
+     "status": {
+      "state": "TERMINATED",
+      "termination_details": {
+       "code": "RUN_EXECUTION_ERROR",
+       "message": "Workload failed",
+       "type": "CLIENT_ERROR"
+      }
+     },
+     "task_key": "transform"
+    },
+    {
+     "attempt_number": 0,
+     "cleanup_duration": 0,
+     "depends_on": [
+      {
+       "task_key": "transform"
+      }
+     ],
+     "end_time": 0,
+     "execution_duration": 0,
+     "run_id": 3013,
+     "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/101/runs/3013",
+     "setup_duration": 0,
+     "sql_task": {
+      "query": {
+       "query_id": "q-publish"
+      },
+      "warehouse_id": "wh-pro-02"
+     },
+     "start_time": 0,
+     "state": {
+      "life_cycle_state": "SKIPPED",
+      "result_state": "UPSTREAM_FAILED",
+      "state_message": "Upstream task(s) failed.",
+      "user_cancelled_or_timedout": false
+     },
+     "status": {
+      "state": "TERMINATED",
+      "termination_details": {
+       "code": "UPSTREAM_FAILED",
+       "message": "Upstream task(s) failed.",
+       "type": "CLIENT_ERROR"
+      }
+     },
+     "task_key": "publish"
+    }
+   ],
+   "trigger": "PERIODIC"
+  },
+  {
+   "attempt_number": 0,
+   "cleanup_duration": 0,
+   "creator_user_name": "6f1e2d3c-0000-4000-8000-00000000e7b0",
+   "end_time": 0,
+   "execution_duration": 0,
+   "format": "MULTI_TASK",
+   "job_id": 101,
+   "job_parameters": [
+    {
+     "default": "prod",
+     "name": "env",
+     "value": "prod"
+    },
+    {
+     "default": "hunter2-fixture",
+     "name": "db_password",
+     "value": "hunter2-fixture"
+    }
+   ],
+   "number_in_job": 3,
+   "original_attempt_run_id": 2003,
+   "queue_duration": 0,
+   "run_duration": 0,
+   "run_id": 2003,
+   "run_name": "nightly_etl",
+   "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/101/runs/2003",
+   "run_type": "JOB_RUN",
+   "setup_duration": 0,
+   "start_time": 1794708000000,
+   "state": {
+    "life_cycle_state": "RUNNING",
+    "state_message": "",
+    "user_cancelled_or_timedout": false
+   },
+   "status": {
+    "state": "RUNNING"
+   },
+   "tasks": [
+    {
+     "attempt_number": 0,
+     "cleanup_duration": 0,
+     "cluster_instance": {
+      "cluster_id": "1115-020100-jc2003ef",
+      "spark_context_id": "30210001"
+     },
+     "description": "Land raw orders",
+     "end_time": 1794708750000,
+     "execution_duration": 480000,
+     "job_cluster_key": "etl_cluster",
+     "notebook_task": {
+      "base_parameters": {
+       "date": "{{job.start_time.iso_date}}"
+      },
+      "notebook_path": "/Repos/alice@example.com/etl/ingest",
+      "source": "WORKSPACE"
+     },
+     "run_id": 3021,
+     "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/101/runs/3021",
+     "setup_duration": 240000,
+     "start_time": 1794708030000,
+     "state": {
+      "life_cycle_state": "TERMINATED",
+      "result_state": "SUCCESS",
+      "state_message": "",
+      "user_cancelled_or_timedout": false
+     },
+     "status": {
+      "state": "TERMINATED",
+      "termination_details": {
+       "code": "SUCCESS",
+       "message": "",
+       "type": "SUCCESS"
+      }
+     },
+     "task_key": "ingest",
+     "timeout_seconds": 1800
+    },
+    {
+     "attempt_number": 0,
+     "cleanup_duration": 0,
+     "cluster_instance": {
+      "cluster_id": "1115-020100-jc2003ef",
+      "spark_context_id": "30220001"
+     },
+     "depends_on": [
+      {
+       "task_key": "ingest"
+      }
+     ],
+     "end_time": 0,
+     "execution_duration": 0,
+     "job_cluster_key": "etl_cluster",
+     "run_id": 3022,
+     "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/101/runs/3022",
+     "setup_duration": 0,
+     "spark_python_task": {
+      "python_file": "/Repos/alice@example.com/etl/transform.py"
+     },
+     "start_time": 1794708755000,
+     "state": {
+      "life_cycle_state": "RUNNING",
+      "state_message": "",
+      "user_cancelled_or_timedout": false
+     },
+     "status": {
+      "state": "RUNNING"
+     },
+     "task_key": "transform"
+    },
+    {
+     "attempt_number": 0,
+     "cleanup_duration": 0,
+     "depends_on": [
+      {
+       "task_key": "transform"
+      }
+     ],
+     "end_time": 0,
+     "execution_duration": 0,
+     "run_id": 3023,
+     "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/101/runs/3023",
+     "setup_duration": 0,
+     "sql_task": {
+      "query": {
+       "query_id": "q-publish"
+      },
+      "warehouse_id": "wh-pro-02"
+     },
+     "start_time": 0,
+     "state": {
+      "life_cycle_state": "BLOCKED",
+      "queue_reason": null,
+      "state_message": "",
+      "user_cancelled_or_timedout": false
+     },
+     "status": {
+      "state": "BLOCKED"
+     },
+     "task_key": "publish"
+    }
+   ],
+   "trigger": "PERIODIC"
+  },
+  {
+   "attempt_number": 0,
+   "cleanup_duration": 0,
+   "creator_user_name": "bob@example.com",
+   "end_time": 1794647520000,
+   "execution_duration": 0,
+   "format": "MULTI_TASK",
+   "job_id": 102,
+   "job_parameters": [],
+   "number_in_job": 1,
+   "original_attempt_run_id": 2101,
+   "queue_duration": 0,
+   "run_duration": 720000,
+   "run_id": 2101,
+   "run_name": "flaky_report",
+   "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/102/runs/2101",
+   "run_type": "JOB_RUN",
+   "setup_duration": 0,
+   "start_time": 1794646800000,
+   "state": {
+    "life_cycle_state": "TERMINATED",
+    "result_state": "SUCCESS",
+    "state_message": "",
+    "user_cancelled_or_timedout": false
+   },
+   "status": {
+    "state": "TERMINATED",
+    "termination_details": {
+     "code": "SUCCESS",
+     "message": "",
+     "type": "SUCCESS"
+    }
+   },
+   "tasks": [
+    {
+     "attempt_number": 0,
+     "cleanup_duration": 0,
+     "cluster_instance": {
+      "cluster_id": "0915-120000-shared01",
+      "spark_context_id": "31010001"
+     },
+     "end_time": 1794646980000,
+     "execution_duration": 170000,
+     "existing_cluster_id": "0915-120000-shared01",
+     "notebook_task": {
+      "notebook_path": "/Users/bob@example.com/report",
+      "source": "WORKSPACE"
+     },
+     "run_id": 3101,
+     "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/102/runs/3101",
+     "setup_duration": 0,
+     "start_time": 1794646810000,
+     "state": {
+      "life_cycle_state": "TERMINATED",
+      "result_state": "SUCCESS",
+      "state_message": "",
+      "user_cancelled_or_timedout": false
+     },
+     "status": {
+      "state": "TERMINATED",
+      "termination_details": {
+       "code": "SUCCESS",
+       "message": "",
+       "type": "SUCCESS"
+      }
+     },
+     "task_key": "extract"
+    },
+    {
+     "attempt_number": 0,
+     "cleanup_duration": 0,
+     "cluster_instance": {
+      "cluster_id": "0915-120000-shared01",
+      "spark_context_id": "31020001"
+     },
+     "depends_on": [
+      {
+       "task_key": "extract"
+      }
+     ],
+     "end_time": 1794647100000,
+     "execution_duration": 115000,
+     "existing_cluster_id": "0915-120000-shared01",
+     "notebook_task": {
+      "notebook_path": "/Users/bob@example.com/render",
+      "source": "WORKSPACE"
+     },
+     "run_id": 3102,
+     "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/102/runs/3102",
+     "setup_duration": 0,
+     "start_time": 1794646985000,
+     "state": {
+      "life_cycle_state": "TERMINATED",
+      "result_state": "FAILED",
+      "state_message": "Workload failed, see run output for details",
+      "user_cancelled_or_timedout": false
+     },
+     "status": {
+      "state": "TERMINATED",
+      "termination_details": {
+       "code": "RUN_EXECUTION_ERROR",
+       "message": "Workload failed",
+       "type": "CLIENT_ERROR"
+      }
+     },
+     "task_key": "render"
+    },
+    {
+     "attempt_number": 1,
+     "cleanup_duration": 0,
+     "cluster_instance": {
+      "cluster_id": "0915-120000-shared01",
+      "spark_context_id": "31030001"
+     },
+     "depends_on": [
+      {
+       "task_key": "extract"
+      }
+     ],
+     "end_time": 1794647340000,
+     "execution_duration": 175000,
+     "existing_cluster_id": "0915-120000-shared01",
+     "notebook_task": {
+      "notebook_path": "/Users/bob@example.com/render",
+      "source": "WORKSPACE"
+     },
+     "run_id": 3103,
+     "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/102/runs/3103",
+     "setup_duration": 0,
+     "start_time": 1794647165000,
+     "state": {
+      "life_cycle_state": "TERMINATED",
+      "result_state": "SUCCESS",
+      "state_message": "",
+      "user_cancelled_or_timedout": false
+     },
+     "status": {
+      "state": "TERMINATED",
+      "termination_details": {
+       "code": "SUCCESS",
+       "message": "",
+       "type": "SUCCESS"
+      }
+     },
+     "task_key": "render"
+    },
+    {
+     "attempt_number": 0,
+     "cleanup_duration": 0,
+     "cluster_instance": {
+      "cluster_id": "0915-120000-shared01",
+      "spark_context_id": "31040001"
+     },
+     "depends_on": [
+      {
+       "task_key": "render"
+      }
+     ],
+     "end_time": 1794647520000,
+     "execution_duration": 175000,
+     "existing_cluster_id": "0915-120000-shared01",
+     "notebook_task": {
+      "notebook_path": "/Users/bob@example.com/email",
+      "source": "WORKSPACE"
+     },
+     "run_id": 3104,
+     "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/102/runs/3104",
+     "setup_duration": 0,
+     "start_time": 1794647345000,
+     "state": {
+      "life_cycle_state": "TERMINATED",
+      "result_state": "SUCCESS",
+      "state_message": "",
+      "user_cancelled_or_timedout": false
+     },
+     "status": {
+      "state": "TERMINATED",
+      "termination_details": {
+       "code": "SUCCESS",
+       "message": "",
+       "type": "SUCCESS"
+      }
+     },
+     "task_key": "email"
+    }
+   ],
+   "trigger": "ONE_TIME"
+  },
+  {
+   "attempt_number": 0,
+   "cleanup_duration": 0,
+   "creator_user_name": "bob@example.com",
+   "end_time": 1794668580000,
+   "execution_duration": 0,
+   "format": "MULTI_TASK",
+   "job_id": 102,
+   "job_parameters": [],
+   "number_in_job": 2,
+   "original_attempt_run_id": 2102,
+   "queue_duration": 0,
+   "run_duration": 180000,
+   "run_id": 2102,
+   "run_name": "flaky_report",
+   "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/102/runs/2102",
+   "run_type": "JOB_RUN",
+   "setup_duration": 0,
+   "start_time": 1794668400000,
+   "state": {
+    "life_cycle_state": "TERMINATED",
+    "result_state": "CANCELED",
+    "state_message": "Run cancelled by bob@example.com.",
+    "user_cancelled_or_timedout": true
+   },
+   "status": {
+    "state": "TERMINATED",
+    "termination_details": {
+     "code": "CANCELED",
+     "message": "Run cancelled by bob@example.com.",
+     "type": "SUCCESS"
+    }
+   },
+   "tasks": [
+    {
+     "attempt_number": 0,
+     "cleanup_duration": 0,
+     "cluster_instance": {
+      "cluster_id": "0915-120000-shared01",
+      "spark_context_id": "31110001"
+     },
+     "end_time": 1794668580000,
+     "execution_duration": 0,
+     "existing_cluster_id": "0915-120000-shared01",
+     "notebook_task": {
+      "notebook_path": "/Users/bob@example.com/report",
+      "source": "WORKSPACE"
+     },
+     "run_id": 3111,
+     "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/102/runs/3111",
+     "setup_duration": 0,
+     "start_time": 1794668410000,
+     "state": {
+      "life_cycle_state": "TERMINATED",
+      "result_state": "CANCELED",
+      "state_message": "Run cancelled.",
+      "user_cancelled_or_timedout": true
+     },
+     "status": {
+      "state": "TERMINATED",
+      "termination_details": {
+       "code": "CANCELED",
+       "message": "",
+       "type": "SUCCESS"
+      }
+     },
+     "task_key": "extract"
+    },
+    {
+     "attempt_number": 0,
+     "cleanup_duration": 0,
+     "depends_on": [
+      {
+       "task_key": "extract"
+      }
+     ],
+     "end_time": 0,
+     "execution_duration": 0,
+     "existing_cluster_id": "0915-120000-shared01",
+     "notebook_task": {
+      "notebook_path": "/Users/bob@example.com/render",
+      "source": "WORKSPACE"
+     },
+     "run_id": 3112,
+     "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/102/runs/3112",
+     "setup_duration": 0,
+     "start_time": 0,
+     "state": {
+      "life_cycle_state": "SKIPPED",
+      "result_state": "UPSTREAM_CANCELED",
+      "state_message": "Upstream task(s) were canceled.",
+      "user_cancelled_or_timedout": false
+     },
+     "status": {
+      "state": "TERMINATED",
+      "termination_details": {
+       "code": "UPSTREAM_CANCELED",
+       "message": "",
+       "type": "SUCCESS"
+      }
+     },
+     "task_key": "render"
+    },
+    {
+     "attempt_number": 0,
+     "cleanup_duration": 0,
+     "depends_on": [
+      {
+       "task_key": "render"
+      }
+     ],
+     "end_time": 0,
+     "execution_duration": 0,
+     "existing_cluster_id": "0915-120000-shared01",
+     "notebook_task": {
+      "notebook_path": "/Users/bob@example.com/email",
+      "source": "WORKSPACE"
+     },
+     "run_id": 3113,
+     "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/102/runs/3113",
+     "setup_duration": 0,
+     "start_time": 0,
+     "state": {
+      "life_cycle_state": "SKIPPED",
+      "result_state": "UPSTREAM_CANCELED",
+      "state_message": "Upstream task(s) were canceled.",
+      "user_cancelled_or_timedout": false
+     },
+     "status": {
+      "state": "TERMINATED",
+      "termination_details": {
+       "code": "UPSTREAM_CANCELED",
+       "message": "",
+       "type": "SUCCESS"
+      }
+     },
+     "task_key": "email"
+    }
+   ],
+   "trigger": "ONE_TIME"
+  },
+  {
+   "attempt_number": 0,
+   "cleanup_duration": 0,
+   "creator_user_name": "6f1e2d3c-0000-4000-8000-00000000e7b0",
+   "end_time": 1794617280000,
+   "execution_duration": 0,
+   "format": "MULTI_TASK",
+   "job_id": 103,
+   "job_parameters": [],
+   "number_in_job": 1,
+   "original_attempt_run_id": 2201,
+   "queue_duration": 0,
+   "run_duration": 1080000,
+   "run_id": 2201,
+   "run_name": "dlt_refresh",
+   "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/103/runs/2201",
+   "run_type": "JOB_RUN",
+   "setup_duration": 0,
+   "start_time": 1794616200000,
+   "state": {
+    "life_cycle_state": "TERMINATED",
+    "result_state": "FAILED",
+    "state_message": "Task refresh failed with message: Pipeline update failed.",
+    "user_cancelled_or_timedout": false
+   },
+   "status": {
+    "state": "TERMINATED",
+    "termination_details": {
+     "code": "RUN_EXECUTION_ERROR",
+     "message": "Task refresh failed.",
+     "type": "CLIENT_ERROR"
+    }
+   },
+   "tasks": [
+    {
+     "attempt_number": 0,
+     "cleanup_duration": 0,
+     "end_time": 1794617280000,
+     "execution_duration": 1060000,
+     "pipeline_task": {
+      "full_refresh": false,
+      "pipeline_id": "pl-orders-0001"
+     },
+     "run_id": 3201,
+     "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/103/runs/3201",
+     "setup_duration": 0,
+     "start_time": 1794616220000,
+     "state": {
+      "life_cycle_state": "TERMINATED",
+      "result_state": "FAILED",
+      "state_message": "Pipeline update failed.",
+      "user_cancelled_or_timedout": false
+     },
+     "status": {
+      "state": "TERMINATED",
+      "termination_details": {
+       "code": "RUN_EXECUTION_ERROR",
+       "message": "",
+       "type": "CLIENT_ERROR"
+      }
+     },
+     "task_key": "refresh"
+    }
+   ],
+   "trigger": "PERIODIC"
+  },
+  {
+   "attempt_number": 0,
+   "cleanup_duration": 0,
+   "creator_user_name": "alice@example.com",
+   "end_time": 0,
+   "execution_duration": 0,
+   "format": "MULTI_TASK",
+   "job_id": 104,
+   "job_parameters": [],
+   "number_in_job": 1,
+   "original_attempt_run_id": 2301,
+   "queue_duration": 1800000,
+   "run_duration": 0,
+   "run_id": 2301,
+   "run_name": "table_watch",
+   "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/104/runs/2301",
+   "run_type": "JOB_RUN",
+   "setup_duration": 0,
+   "start_time": 1794704400000,
+   "state": {
+    "life_cycle_state": "QUEUED",
+    "queue_reason": "Queued due to reaching maximum concurrent runs on the warehouse.",
+    "state_message": "",
+    "user_cancelled_or_timedout": false
+   },
+   "status": {
+    "state": "QUEUED"
+   },
+   "tasks": [
+    {
+     "attempt_number": 0,
+     "cleanup_duration": 0,
+     "end_time": 0,
+     "environment_key": "default",
+     "execution_duration": 0,
+     "notebook_task": {
+      "notebook_path": "/Users/alice@example.com/projects/churn",
+      "source": "WORKSPACE"
+     },
+     "run_id": 3301,
+     "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/104/runs/3301",
+     "setup_duration": 0,
+     "start_time": 0,
+     "state": {
+      "life_cycle_state": "QUEUED",
+      "state_message": "",
+      "user_cancelled_or_timedout": false
+     },
+     "status": {
+      "state": "QUEUED"
+     },
+     "task_key": "score"
+    }
+   ],
+   "trigger": "TABLE"
+  },
+  {
+   "attempt_number": 0,
+   "cleanup_duration": 0,
+   "creator_user_name": "alice@example.com",
+   "end_time": 1794571500000,
+   "execution_duration": 0,
+   "format": "MULTI_TASK",
+   "number_in_job": null,
+   "original_attempt_run_id": 2401,
+   "queue_duration": 0,
+   "run_duration": 300000,
+   "run_id": 2401,
+   "run_name": "adhoc_backfill",
+   "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/runs/2401",
+   "run_type": "SUBMIT_RUN",
+   "setup_duration": 0,
+   "start_time": 1794571200000,
+   "state": {
+    "life_cycle_state": "TERMINATED",
+    "result_state": "SUCCESS",
+    "state_message": "",
+    "user_cancelled_or_timedout": false
+   },
+   "status": {
+    "state": "TERMINATED",
+    "termination_details": {
+     "code": "SUCCESS",
+     "message": "",
+     "type": "SUCCESS"
+    }
+   },
+   "tasks": [
+    {
+     "attempt_number": 0,
+     "cleanup_duration": 0,
+     "cluster_instance": {
+      "cluster_id": "1113-120000-submit01",
+      "spark_context_id": "34010001"
+     },
+     "end_time": 1794571500000,
+     "execution_duration": 130000,
+     "new_cluster": {
+      "autoscale": {
+       "max_workers": 8,
+       "min_workers": 2
+      },
+      "node_type_id": "i3.xlarge",
+      "policy_id": "pol-jobs-001",
+      "spark_conf": {
+       "fs.azure.account.key.lake.dfs.core.windows.net": "{{secrets/lake/account-key}}",
+       "spark.databricks.delta.optimizeWrite.enabled": "true",
+       "spark.hadoop.fs.s3a.secret.key": "plaintext-fixture-secret"
+      },
+      "spark_version": "15.4.x-scala2.12"
+     },
+     "run_id": 3401,
+     "run_page_url": "https://dbc-fixture.cloud.databricks.com/jobs/runs/3401",
+     "setup_duration": 150000,
+     "spark_python_task": {
+      "python_file": "dbfs:/scripts/backfill.py"
+     },
+     "start_time": 1794571220000,
+     "state": {
+      "life_cycle_state": "TERMINATED",
+      "result_state": "SUCCESS",
+      "state_message": "",
+      "user_cancelled_or_timedout": false
+     },
+     "status": {
+      "state": "TERMINATED",
+      "termination_details": {
+       "code": "SUCCESS",
+       "message": "",
+       "type": "SUCCESS"
+      }
+     },
+     "task_key": "backfill"
+    }
+   ],
+   "trigger": "ONE_TIME"
+  }
+ ],
+ "secret_scopes": [
+  {
+   "backend_type": "DATABRICKS",
+   "name": "lake"
+  },
+  {
+   "backend_type": "AZURE_KEYVAULT",
+   "keyvault_metadata": {
+    "dns_name": "https://kv-prod.vault.azure.net/",
+    "resource_id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv-prod"
+   },
+   "name": "kv-prod"
+  },
+  {
+   "backend_type": "DATABRICKS",
+   "name": "ml"
+  }
+ ],
+ "warehouses": [
+  {
+   "auto_stop_mins": 10,
+   "channel": {
+    "name": "CHANNEL_NAME_CURRENT"
+   },
+   "cluster_size": "2X-Small",
+   "creator_name": "alice@example.com",
+   "enable_photon": true,
+   "enable_serverless_compute": true,
+   "health": {
+    "status": "HEALTHY"
+   },
+   "id": "wh-serverless-01",
+   "jdbc_url": "jdbc:spark://dbc-fixture.cloud.databricks.com:443/default;transportMode=http;ssl=1;AuthMech=3;httpPath=/sql/1.0/warehouses/wh-serverless-01;",
+   "max_num_clusters": 1,
+   "min_num_clusters": 1,
+   "name": "Serverless Starter Warehouse",
+   "num_active_sessions": 2,
+   "num_clusters": 1,
+   "spot_instance_policy": "COST_OPTIMIZED",
+   "state": "RUNNING",
+   "tags": {
+    "custom_tags": [
+     {
+      "key": "team",
+      "value": "analytics"
+     }
+    ]
+   },
+   "warehouse_type": "PRO"
+  },
+  {
+   "auto_stop_mins": 30,
+   "channel": {
+    "name": "CHANNEL_NAME_CURRENT"
+   },
+   "cluster_size": "Medium",
+   "creator_name": "alice@example.com",
+   "enable_photon": true,
+   "enable_serverless_compute": false,
+   "id": "wh-pro-02",
+   "jdbc_url": "jdbc:spark://dbc-fixture.cloud.databricks.com:443/default;transportMode=http;ssl=1;AuthMech=3;httpPath=/sql/1.0/warehouses/wh-pro-02;",
+   "max_num_clusters": 3,
+   "min_num_clusters": 1,
+   "name": "BI Pro",
+   "num_active_sessions": 0,
+   "num_clusters": 0,
+   "spot_instance_policy": "RELIABILITY_OPTIMIZED",
+   "state": "STOPPED",
+   "tags": {},
+   "warehouse_type": "PRO"
+  }
+ ],
+ "workspace": {
+  "/": [
+   {
+    "created_at": 1790848800000,
+    "modified_at": 1794304800000,
+    "object_id": 9000,
+    "object_type": "DIRECTORY",
+    "path": "/Users",
+    "resource_id": "res-Users"
+   },
+   {
+    "created_at": 1790848800000,
+    "modified_at": 1794304800000,
+    "object_id": 9001,
+    "object_type": "DIRECTORY",
+    "path": "/Shared",
+    "resource_id": "res-Shared"
+   },
+   {
+    "created_at": 1790848800000,
+    "modified_at": 1794304800000,
+    "object_id": 9002,
+    "object_type": "DIRECTORY",
+    "path": "/Repos",
+    "resource_id": "res-Repos"
+   }
+  ],
+  "/Repos": [],
+  "/Shared": [
+   {
+    "created_at": 1790848800000,
+    "modified_at": 1794304800000,
+    "object_id": 9012,
+    "object_type": "DIRECTORY",
+    "path": "/Shared/dashboards",
+    "resource_id": "res-Shared-dashboards"
+   },
+   {
+    "created_at": 1790848800000,
+    "language": "PYTHON",
+    "modified_at": 1794304800000,
+    "object_id": 9013,
+    "object_type": "NOTEBOOK",
+    "path": "/Shared/common_udfs",
+    "resource_id": "res-Shared-common_udfs"
+   }
+  ],
+  "/Shared/dashboards": [
+   {
+    "created_at": 1790848800000,
+    "modified_at": 1794304800000,
+    "object_id": 9014,
+    "object_type": "DASHBOARD",
+    "path": "/Shared/dashboards/sales.lvdash.json",
+    "resource_id": "res-Shared-dashboards-sales.lvdash.json"
+   }
+  ],
+  "/Users": [
+   {
+    "created_at": 1790848800000,
+    "modified_at": 1794304800000,
+    "object_id": 9003,
+    "object_type": "DIRECTORY",
+    "path": "/Users/alice@example.com",
+    "resource_id": "res-Users-alice@example.com"
+   },
+   {
+    "created_at": 1790848800000,
+    "modified_at": 1794304800000,
+    "object_id": 9004,
+    "object_type": "DIRECTORY",
+    "path": "/Users/bob@example.com",
+    "resource_id": "res-Users-bob@example.com"
+   }
+  ],
+  "/Users/alice@example.com": [
+   {
+    "created_at": 1790848800000,
+    "language": "PYTHON",
+    "modified_at": 1794304800000,
+    "object_id": 9005,
+    "object_type": "NOTEBOOK",
+    "path": "/Users/alice@example.com/ingest_dev",
+    "resource_id": "res-Users-alice@example.com-ingest_dev"
+   },
+   {
+    "created_at": 1790848800000,
+    "language": "SQL",
+    "modified_at": 1794304800000,
+    "object_id": 9006,
+    "object_type": "NOTEBOOK",
+    "path": "/Users/alice@example.com/explore",
+    "resource_id": "res-Users-alice@example.com-explore"
+   },
+   {
+    "created_at": 1790848800000,
+    "modified_at": 1794304800000,
+    "object_id": 9007,
+    "object_type": "DIRECTORY",
+    "path": "/Users/alice@example.com/projects",
+    "resource_id": "res-Users-alice@example.com-projects"
+   },
+   {
+    "created_at": 1790848800000,
+    "modified_at": 1794304800000,
+    "object_id": 9008,
+    "object_type": "FILE",
+    "path": "/Users/alice@example.com/requirements.txt",
+    "resource_id": "res-Users-alice@example.com-requirements.txt",
+    "size": 120
+   }
+  ],
+  "/Users/alice@example.com/projects": [
+   {
+    "created_at": 1790848800000,
+    "language": "PYTHON",
+    "modified_at": 1794304800000,
+    "object_id": 9009,
+    "object_type": "NOTEBOOK",
+    "path": "/Users/alice@example.com/projects/churn",
+    "resource_id": "res-Users-alice@example.com-projects-churn"
+   },
+   {
+    "created_at": 1790848800000,
+    "language": "SCALA",
+    "modified_at": 1794304800000,
+    "object_id": 9010,
+    "object_type": "NOTEBOOK",
+    "path": "/Users/alice@example.com/projects/helpers",
+    "resource_id": "res-Users-alice@example.com-projects-helpers"
+   }
+  ],
+  "/Users/bob@example.com": [
+   {
+    "created_at": 1790848800000,
+    "language": "PYTHON",
+    "modified_at": 1794304800000,
+    "object_id": 9011,
+    "object_type": "NOTEBOOK",
+    "path": "/Users/bob@example.com/report",
+    "resource_id": "res-Users-bob@example.com-report"
+   }
+  ]
+ }
+}

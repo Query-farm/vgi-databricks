@@ -15,7 +15,7 @@ main worker.
 | `copy_to_sink` | `COPY … TO` with a custom output format | `COPY t TO 'out.jsonl' (FORMAT 'copy_to_sink.jsonl_out')` |
 
 Streaming large results and calling REST APIs are covered by the main worker's
-`sequence_table` and `fetch_items`.
+API-backed tables (`src/databricks_worker/scan.py`).
 
 ## Running a recipe
 

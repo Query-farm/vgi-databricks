@@ -12,5 +12,8 @@
   "optional_files": [
     ".github/workflows/nightly.yml",
     ".github/dependabot.yml"
-  ]
+  ],
+  "name": "databricks",
+  "repo": "Query-farm/vgi-databricks",
+  "initialized": "2026-11-15"
 }

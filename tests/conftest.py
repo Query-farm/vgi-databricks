@@ -1,32 +1,27 @@
-"""Shared fixtures: a worker client and the local mock API."""
+"""Shared fixtures: the strict Databricks replay server."""
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
-from vgi.client import Client
+
+from databricks_worker.client import clear_caches
 
 ROOT = Path(__file__).resolve().parent.parent
 
 
-@pytest.fixture(scope="session")
-def client() -> Iterator[Client]:
-    """A client that launches the worker as a subprocess, the way DuckDB does."""
-    with Client([sys.executable, "-m", "starter_worker.worker"]) as c:
-        yield c
-
-
-@pytest.fixture(scope="session")
-def mock_api() -> Iterator[str]:
-    """Start test/mock_api/server.py on a free port and return its base URL."""
+def _serve(**env: str) -> Iterator[str]:
     proc = subprocess.Popen(
         [sys.executable, str(ROOT / "test" / "mock_api" / "server.py")],
         stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
         text=True,
+        env={**os.environ, **env},
     )
     assert proc.stdout is not None
     line = proc.stdout.readline().strip()
@@ -34,3 +29,20 @@ def mock_api() -> Iterator[str]:
     yield f"http://127.0.0.1:{line.removeprefix('PORT:')}"
     proc.terminate()
     proc.wait(timeout=10)
+
+
+@pytest.fixture(scope="session")
+def mock_api() -> Iterator[str]:
+    """Replay that answers the first request to every path with 429 and pages task arrays by two."""
+    yield from _serve(MOCK_FLAKY="1", MOCK_TASK_PAGE="2")
+
+
+@pytest.fixture(scope="session")
+def mock_plain() -> Iterator[str]:
+    """Replay without rate limiting, for request-log assertions."""
+    yield from _serve()
+
+
+@pytest.fixture(autouse=True)
+def _fresh_caches() -> None:
+    clear_caches()

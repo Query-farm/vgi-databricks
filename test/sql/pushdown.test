@@ -1,0 +1,204 @@
+# name: test/sql/pushdown.test
+# description: SQL predicates reach the Databricks API as parameters / paths / bodies (checked in the replay's request log)
+# group: [databricks]
+
+require vgi
+
+require-env DATABRICKS_WORKER
+
+require-env DATABRICKS_MOCK_PLAIN
+
+# The replay's request log is read with read_json over HTTP.
+statement ok
+LOAD httpfs;
+
+statement ok
+LOAD json;
+
+statement ok
+ATTACH 'databricks' (TYPE vgi, LOCATION '{DATABRICKS_WORKER}');
+
+statement ok
+CREATE SECRET dbx (TYPE databricks, HOST '{DATABRICKS_MOCK_PLAIN}', TOKEN 'dapi-fixture-token', PAGE_SIZE 2);
+
+statement ok
+CREATE MACRO reqlog() AS TABLE SELECT * FROM read_json('{DATABRICKS_MOCK_PLAIN}/__requests', columns = {'method': 'VARCHAR', 'path': 'VARCHAR', 'query': 'JSON', 'body': 'JSON'});
+
+# ------------------------------------------------------------------ job_runs
+
+# job_id, an active life-cycle state and the start_time range become runs/list parameters.
+query I
+SELECT count(*) FROM databricks.main.job_runs WHERE job_id = 101 AND life_cycle_state = 'RUNNING' AND start_time >= TIMESTAMPTZ '2026-11-14 00:00:00+00' AND start_time <= TIMESTAMPTZ '2026-11-16 00:00:00+00';
+----
+1
+
+query TTTT
+SELECT query->>'$.job_id[0]', query->>'$.active_only[0]', query->>'$.start_time_from[0]', query->>'$.start_time_to[0]' FROM reqlog() WHERE path = '/api/2.2/jobs/runs/list' AND query->>'$.active_only[0]' = 'true';
+----
+101	true	1794614400000	1794787200000
+
+# A result_state filter implies a terminated run: completed_only (6 completed runs = 3 pages).
+query I
+SELECT count(*) FROM databricks.main.job_runs WHERE result_state = 'CANCELED';
+----
+1
+
+query I
+SELECT count(*) FROM reqlog() WHERE path = '/api/2.2/jobs/runs/list' AND query->>'$.completed_only[0]' = 'true';
+----
+3
+
+# run_id = goes straight to runs/get.
+query T
+SELECT run_name FROM databricks.main.job_runs WHERE run_id = 2201;
+----
+dlt_refresh
+
+query I
+SELECT count(*) FROM reqlog() WHERE path = '/api/2.2/jobs/runs/get' AND query->>'$.run_id[0]' = '2201';
+----
+1
+
+# Listings page through next_page_token (PAGE_SIZE 2; 8 runs = 4 pages without filters).
+query I
+SELECT count(*) FROM databricks.main.job_runs;
+----
+8
+
+query I
+SELECT count(*) FROM reqlog() WHERE path = '/api/2.2/jobs/runs/list' AND (query->'$.page_token') IS NOT NULL AND (query->>'$.active_only[0]') IS NULL AND (query->>'$.completed_only[0]') IS NULL AND (query->>'$.job_id[0]') IS NULL;
+----
+3
+
+# --------------------------------------------------------------------- jobs
+
+query I
+SELECT job_id FROM databricks.main.jobs WHERE name = 'flaky_report';
+----
+102
+
+query T
+SELECT query->>'$.name[0]' FROM reqlog() WHERE path = '/api/2.2/jobs/list' AND (query->>'$.name[0]') IS NOT NULL;
+----
+flaky_report
+
+query T
+SELECT name FROM databricks.main.jobs WHERE job_id IN (103, 104) ORDER BY name;
+----
+dlt_refresh
+table_watch
+
+query T
+SELECT list(query->>'$.job_id[0]' ORDER BY query->>'$.job_id[0]') FROM reqlog() WHERE path = '/api/2.2/jobs/get';
+----
+[103, 104]
+
+# ----------------------------------------------------------------- clusters
+
+query T
+SELECT cluster_name FROM databricks.main.clusters WHERE state IN ('RUNNING', 'TERMINATED') AND cluster_source = 'UI' ORDER BY cluster_name;
+----
+alice-adhoc
+shared-analytics
+
+query TT
+SELECT query->'$."filter_by.cluster_states"', query->'$."filter_by.cluster_sources"' FROM reqlog() WHERE path = '/api/2.1/clusters/list' AND (query->'$."filter_by.cluster_sources"') IS NOT NULL;
+----
+["RUNNING","TERMINATED"]	["UI"]
+
+# Cluster events: cluster_id, type and the time range go into the POST body.
+query I
+SELECT count(*) FROM databricks.main.cluster_events WHERE cluster_id = '0915-120000-shared01' AND type = 'RESIZING' AND timestamp >= TIMESTAMPTZ '2026-11-14 00:00:00+00';
+----
+2
+
+query TTT
+SELECT body->>'$.cluster_id', body->'$.event_types', body->>'$.start_time' FROM reqlog() WHERE path = '/api/2.1/clusters/events' AND (body->'$.event_types') IS NOT NULL;
+----
+0915-120000-shared01	["RESIZING"]	1794614400000
+
+# ------------------------------------------------------------ query history
+
+query I
+SELECT count(*) FROM databricks.main.query_history WHERE status = 'FAILED' AND warehouse_id IN ('wh-pro-02', 'wh-serverless-01') AND user_id = 1002 AND query_start_time >= TIMESTAMPTZ '2026-11-14 00:00:00+00' AND query_start_time < TIMESTAMPTZ '2026-11-15 00:00:00+00';
+----
+2
+
+query TTTTT
+SELECT query->'$."filter_by.statuses"', query->'$."filter_by.warehouse_ids"', query->'$."filter_by.user_ids"', query->>'$."filter_by.query_start_time_range.start_time_ms"[0]', query->>'$."filter_by.query_start_time_range.end_time_ms"[0]' FROM reqlog() WHERE path = '/api/2.0/sql/history/queries' AND (query->'$."filter_by.statuses"') IS NOT NULL;
+----
+["FAILED"]	["wh-pro-02","wh-serverless-01"]	["1002"]	1794614400000	1794700800001
+
+# --------------------------------------------------------------- pipelines
+
+query I
+SELECT count(*) FROM databricks.main.pipeline_events WHERE pipeline_id = 'pl-orders-0001' AND level IN ('ERROR', 'WARN') AND timestamp >= TIMESTAMPTZ '2026-11-14 00:00:00+00';
+----
+3
+
+# The level set and time range become the events filter expression; the page token alone carries
+# it to the next page (the API rejects other fields next to a token).
+query TT
+SELECT path, query->>'$.filter[0]' FROM reqlog() WHERE path LIKE '/api/2.0/pipelines/%/events' AND (query->>'$.filter[0]') IS NOT NULL;
+----
+/api/2.0/pipelines/pl-orders-0001/events	level in ('ERROR', 'WARN') AND timestamp >= '2026-11-14T00:00:00Z'
+
+query I
+SELECT count(*) FROM reqlog() WHERE path LIKE '/api/2.0/pipelines/%/events' AND (query->'$.page_token') IS NOT NULL AND (query->'$.filter') IS NULL;
+----
+1
+
+query T
+SELECT pipeline_id FROM databricks.main.pipelines WHERE name = 'orders_dlt';
+----
+pl-orders-0001
+
+query T
+SELECT query->>'$.filter[0]' FROM reqlog() WHERE path = '/api/2.0/pipelines' AND (query->>'$.filter[0]') IS NOT NULL;
+----
+name LIKE 'orders_dlt'
+
+# pipeline_id = goes straight to the update listing's path: no pipelines listing.
+statement ok
+SELECT count(*) FROM databricks.main.pipeline_updates WHERE pipeline_id = 'pl-events-0002';
+
+query I
+SELECT count(*) FROM reqlog() WHERE path = '/api/2.0/pipelines/pl-events-0002/updates';
+----
+1
+
+# --------------------------------------------------------------- unified
+
+# status 'running' → active_only; started_at range → start_time_from.
+query T
+SELECT run_id FROM databricks.unified.runs WHERE status IN ('running', 'queued') AND started_at >= TIMESTAMPTZ '2026-11-15 00:00:00+00' ORDER BY run_id;
+----
+2003
+2301
+
+query TT
+SELECT query->>'$.active_only[0]', query->>'$.start_time_from[0]' FROM reqlog() WHERE path = '/api/2.2/jobs/runs/list' AND query->>'$.start_time_from[0]' = '1794700800000';
+----
+true	1794700800000
+
+query I
+SELECT count(*) FROM databricks.unified.task_runs WHERE run_id = '2002';
+----
+3
+
+query I
+SELECT count(*) FROM reqlog() WHERE path = '/api/2.2/jobs/runs/get' AND query->>'$.run_id[0]' = '2002';
+----
+1
+
+# --------------------------------------------------------------- repos
+
+query I
+SELECT repo_id FROM databricks.main.repos WHERE path = '/Repos/alice@example.com/etl';
+----
+501
+
+query T
+SELECT query->>'$.path_prefix[0]' FROM reqlog() WHERE path = '/api/2.0/repos' AND (query->>'$.path_prefix[0]') IS NOT NULL;
+----
+/Repos/alice@example.com/etl
