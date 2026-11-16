@@ -267,7 +267,7 @@ def int_values(pd: Pushdown, column: str) -> list[int] | None:
     for v in vals:
         try:
             out.append(int(v))
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return None
     return sorted(set(out))
 
