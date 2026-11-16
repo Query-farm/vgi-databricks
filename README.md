@@ -45,7 +45,7 @@ INSTALL vgi FROM query_farm;
 LOAD vgi FROM query_farm;
 
 ATTACH 'databricks' (TYPE vgi,
-  LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-databricks@v0.1.0 vgi-databricks-worker');
+  LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-databricks@v0.1.1 vgi-databricks-worker');
 
 -- Credentials go in a DuckDB secret, created after ATTACH (which registers the secret type).
 CREATE SECRET dbx (TYPE databricks, HOST 'https://dbc-a1b2c3d4-e5f6.cloud.databricks.com',
