@@ -38,6 +38,8 @@ Databricks.
 
 **DuckDB 2.0:**
 
+vgi-databricks 0.2.0 speaks VGI protocol 3.4, so it needs Haybarn 2.0.1 or newer (Haybarn 2.0.0 loads a 3.3 `vgi` extension that cannot attach it).
+
 ```sql
 SET allow_extension_repositories = 'allowed';
 CREATE EXTENSION REPOSITORY IF NOT EXISTS query_farm WITH PREFIX 'https://duckdb-extensions.query.farm';
@@ -45,7 +47,7 @@ INSTALL vgi FROM query_farm;
 LOAD vgi FROM query_farm;
 
 ATTACH 'databricks' (TYPE vgi,
-  LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-databricks@v0.1.1 vgi-databricks-worker');
+  LOCATION 'uvx --from git+https://github.com/Query-farm/vgi-databricks@v0.2.0 vgi-databricks-worker');
 
 -- Credentials go in a DuckDB secret, created after ATTACH (which registers the secret type).
 CREATE SECRET dbx (TYPE databricks, HOST 'https://dbc-a1b2c3d4-e5f6.cloud.databricks.com',
